@@ -399,6 +399,14 @@ class HomeContent extends StatelessWidget {
           variant: AppButtonVariant.primary,
         ),
 
+        SizedBox(height: AppSpacing.md),
+
+        AppButton(
+          label: 'Go to Signup',
+          onPressed: () => context.push(AppRoutes.signup),
+          variant: AppButtonVariant.secondary,
+        ),
+
       ],
     );
   }
