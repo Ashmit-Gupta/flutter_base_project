@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/design/app_radius.dart';
+import '../../core/design/app_text_theme.dart';
 import 'app_button_theme.dart';
 import 'app_snackbar_theme.dart';
 import 'app_theme.dart';
@@ -11,11 +12,16 @@ ThemeData buildDarkTheme({
   required String fontFamily,
 }) {
   final colors = DarkAppColors();
+  final textTheme = buildAppTextTheme(
+    color: colors.textPrimary,
+    fontFamily: fontFamily,
+  );
   final baseTheme = ThemeData(
     brightness: Brightness.dark,
     useMaterial3: true,
     fontFamily: fontFamily,
     scaffoldBackgroundColor: colors.background,
+    textTheme: textTheme,
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: colors.surface,
@@ -44,7 +50,7 @@ ThemeData buildDarkTheme({
   return baseTheme.copyWith(
     extensions: [
       AppTheme(colors: colors, fontFamily: fontFamily),
-      buildAppButtonTheme(colors: colors, textTheme: baseTheme.textTheme),
+      buildAppButtonTheme(colors: colors, textTheme: textTheme),
       buildAppSnackbarTheme(colors: colors),
     ],
   );

@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../layout/breakpoints.dart';
-import '../layout/screen_type_scope.dart';
 import 'app_text_tokens.dart';
 import 'typography_scale.dart';
 

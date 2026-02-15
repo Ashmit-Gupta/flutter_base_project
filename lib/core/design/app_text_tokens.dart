@@ -19,6 +19,7 @@ class AppTextTokens {
   /// - Splash / hero headings
   /// - Empty state headlines
   /// - Marketing-style emphasis
+  /// // maxFontSize intentionally set to AppTextTokens.display (48)to avoid clamping token-defined sizes at theme build time.
   static const double display = 48;
 
   /// Primary page headline — **32px**.
