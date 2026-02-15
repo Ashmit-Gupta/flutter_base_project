@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
-import '../features/home_page.dart';
+import '../features/design_system_screen.dart';
 import 'observers/route_observer.dart';
 import 'routes.dart';
 
@@ -15,7 +15,8 @@ class AppRouter {
       observers: [
         _routeObserver,
       ],
-      initialLocation: AppRoutes.home,
+      // initialLocation: AppRoutes.home,
+      initialLocation: AppRoutes.designSystemScreen,
       debugLogDiagnostics: true,
       routes: [
         // GoRoute(
@@ -23,8 +24,8 @@ class AppRouter {
         //   // builder: (context, state) => const SplashScreen(),
         // ),
         GoRoute(
-          path: AppRoutes.home,
-          builder: (context, state) => const HomeScreen(),
+          path: AppRoutes.designSystemScreen,
+          builder: (context, state) => const DesignSystemScreen(),
         ),
         // GoRoute(
         //   path: AppRoutes.home,

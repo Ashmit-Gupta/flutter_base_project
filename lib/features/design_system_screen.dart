@@ -10,10 +10,15 @@ import '../../core/design/app_radius.dart';
 import '../../core/design/app_spacing.dart';
 import '../../core/layout/adaptive_layout_builder.dart';
 import '../core/layout/layout_constants.dart';
+import '../../core/feedback/app_snackbar.dart';
+import '../../core/widgets/app_button.dart';
+import '../../core/widgets/app_button_variant.dart';
+import '../core/widgets/app_labeled_text_field.dart';
+import '../../core/widgets/app_text_field.dart';
 
 /// Home screen: dumb shell. State from Riverpod; layout from [AdaptiveLayoutBuilder].
-class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
+class DesignSystemScreen extends ConsumerWidget {
+  const DesignSystemScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -81,7 +86,9 @@ class _TabletLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: LayoutConstants.tabletContentMaxWidth),
+        constraints: const BoxConstraints(
+          maxWidth: LayoutConstants.tabletContentMaxWidth,
+        ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.xl,
@@ -111,7 +118,9 @@ class _DesktopLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: LayoutConstants.desktopContentMaxWidth),
+        constraints: const BoxConstraints(
+          maxWidth: LayoutConstants.desktopContentMaxWidth,
+        ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.xxl,
@@ -127,7 +136,8 @@ class _DesktopLayout extends StatelessWidget {
   }
 }
 
-/// Dumb content: no layout logic, no state. Uses only design tokens and context.text.
+/// Dumb content: no layout logic, no state.
+/// Uses ONLY design tokens, context.text, and reusable widgets.
 class HomeContent extends StatelessWidget {
   const HomeContent({
     super.key,
@@ -140,6 +150,10 @@ class HomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final normalController = TextEditingController();
+    final errorController = TextEditingController(text: '123');
+    final disabledController = TextEditingController(text: 'Disabled value');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -153,12 +167,15 @@ class HomeContent extends StatelessWidget {
           themeState.mode.name.toUpperCase(),
           style: context.text.body(),
         ),
+
         SizedBox(height: AppSpacing.xl),
+
         Text(
           'Select Theme',
           style: context.text.headline(),
         ),
         SizedBox(height: AppSpacing.sm),
+
         _ThemeRadio(
           label: 'System',
           value: AppThemeMode.system,
@@ -177,12 +194,55 @@ class HomeContent extends StatelessWidget {
           groupValue: themeState.mode,
           onChanged: themeNotifier.setThemeMode,
         ),
+
         SizedBox(height: AppSpacing.xl),
+
+        Text(
+          'TextField Visual States',
+          style: context.text.headline(),
+        ),
+        SizedBox(height: AppSpacing.sm),
+
+        /// ✅ Normal state
+        AppTextField(
+          controller: normalController,
+          label: 'Normal Field',
+          hint: 'Enter value',
+        ),
+
+        SizedBox(height: AppSpacing.md),
+
+        /// ❌ Error state (validator-driven)
+        AppTextField(
+          controller: errorController,
+          label: 'Error Field',
+          hint: 'Enter a number',
+          autovalidateMode: AutovalidateMode.always,
+          validator: (value) {
+            if (value == null || value.length < 5) {
+              return 'Minimum 5 characters required';
+            }
+            return null;
+          },
+        ),
+
+        SizedBox(height: AppSpacing.md),
+
+        /// 🚫 Disabled state
+        AppTextField(
+          controller: disabledController,
+          label: 'Disabled Field',
+          enabled: false,
+        ),
+
+        SizedBox(height: AppSpacing.xl),
+
         Text(
           'Visual Test',
           style: context.text.headline(),
         ),
         SizedBox(height: AppSpacing.sm),
+
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -195,12 +255,134 @@ class HomeContent extends StatelessWidget {
             style: context.text.body().copyWith(color: Colors.white),
           ),
         ),
+
         SizedBox(height: AppSpacing.md),
+
         Text(
-          'This text uses the unified typography system. '
-          'Resize the window or toggle theme.',
+          'Toggle light/dark theme to verify '
+              'normal, error, and disabled states.',
           style: context.text.body(),
         ),
+        SizedBox(height: AppSpacing.md),
+        Text(
+          'TextField Visual States',
+          style: context.text.headline(),
+        ),
+        SizedBox(height: AppSpacing.sm),
+
+        /// ✅ Normal
+        AppLabeledTextField(
+          heading: 'Normal Field',
+          controller: normalController,
+          hint: 'Enter value',
+        ),
+
+        SizedBox(height: AppSpacing.md),
+
+        /// ❌ Error
+        AppLabeledTextField(
+          heading: 'Error Field',
+          controller: errorController,
+          hint: 'Enter a number',
+          autovalidateMode: AutovalidateMode.always,
+          validator: (value) {
+            if (value == null || value.length < 5) {
+              return 'Minimum 5 characters required';
+            }
+            return null;
+          },
+        ),
+
+        SizedBox(height: AppSpacing.md),
+
+        /// 🚫 Disabled
+        AppLabeledTextField(
+          heading: 'Disabled Field',
+          controller: disabledController,
+          enabled: false,
+        ),
+
+        SizedBox(height: AppSpacing.xl),
+
+        Text(
+          'AppButton Examples',
+          style: context.text.headline(),
+        ),
+        SizedBox(height: AppSpacing.sm),
+
+        AppButton(
+          label: 'Primary Button',
+          onPressed: () {},
+          variant: AppButtonVariant.primary,
+        ),
+
+        SizedBox(height: AppSpacing.md),
+
+        AppButton(
+          label: 'Loading Button',
+          onPressed: () {},
+          loading: true,
+          variant: AppButtonVariant.primary,
+        ),
+
+        SizedBox(height: AppSpacing.md),
+
+        AppButton(
+          label: 'Disabled Button',
+          onPressed: null,
+          variant: AppButtonVariant.primary,
+        ),
+
+        SizedBox(height: AppSpacing.xl),
+
+        Text(
+          'AppSnackbar Examples',
+          style: context.text.headline(),
+        ),
+        SizedBox(height: AppSpacing.sm),
+
+        AppButton(
+          label: 'Login success',
+          onPressed: () => AppSnackbar.success(
+            context,
+            'Signed in successfully',
+          ),
+          variant: AppButtonVariant.primary,
+        ),
+
+        SizedBox(height: AppSpacing.md),
+
+        AppButton(
+          label: 'Warning',
+          onPressed: () => AppSnackbar.warning(
+            context,
+            'Low balance. Add funds to continue.',
+          ),
+          variant: AppButtonVariant.secondary,
+        ),
+
+        SizedBox(height: AppSpacing.md),
+
+        AppButton(
+          label: 'Error',
+          onPressed: () => AppSnackbar.error(
+            context,
+            'Connection failed. Check your network.',
+          ),
+          variant: AppButtonVariant.danger,
+        ),
+
+        SizedBox(height: AppSpacing.md),
+
+        AppButton(
+          label: 'Info',
+          onPressed: () => AppSnackbar.info(
+            context,
+            'Coupon expires in 24 hours',
+          ),
+          variant: AppButtonVariant.secondary,
+        ),
+
       ],
     );
   }
