@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/theme/app_theme_extension.dart';
+import '../../app/routes.dart';
 import '../../app/theme/theme_mode.dart';
 import '../../app/theme/theme_notifier.dart';
 import '../../app/theme/theme_provider.dart';
@@ -381,6 +383,20 @@ class HomeContent extends StatelessWidget {
             'Coupon expires in 24 hours',
           ),
           variant: AppButtonVariant.secondary,
+        ),
+
+        SizedBox(height: AppSpacing.xl),
+
+        Text(
+          'Navigation',
+          style: context.text.headline(),
+        ),
+        SizedBox(height: AppSpacing.sm),
+
+        AppButton(
+          label: 'Go to Login',
+          onPressed: () => context.push(AppRoutes.login),
+          variant: AppButtonVariant.primary,
         ),
 
       ],

@@ -77,6 +77,7 @@ AppButtonTheme buildAppButtonTheme({
       foregroundColor: colors.primary,
       disabledForegroundColor: colors.textMuted,
       side: BorderSide(color: colors.border),
+
       minimumSize: size,
       padding: padding,
       shape: shape,

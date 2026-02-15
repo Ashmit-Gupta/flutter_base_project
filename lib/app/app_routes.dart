@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/design_system_screen.dart';
 import 'observers/route_observer.dart';
 import 'routes.dart';
@@ -23,6 +25,14 @@ class AppRouter {
         //   path: AppRoutes.splash,
         //   // builder: (context, state) => const SplashScreen(),
         // ),
+        GoRoute(
+          path: AppRoutes.login,
+          builder: (context, state) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.forgotPassword,
+          builder: (context, state) => const ForgotPasswordScreen(),
+        ),
         GoRoute(
           path: AppRoutes.designSystemScreen,
           builder: (context, state) => const DesignSystemScreen(),

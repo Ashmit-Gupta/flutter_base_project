@@ -57,8 +57,9 @@ class AppButton extends StatelessWidget {
       );
     }
 
-    final textTheme = Theme.of(context).textTheme;
-    final labelWidget = Text(label, style: textTheme.labelLarge);
+    // Do NOT pass style: textTheme.labelLarge — it overrides ButtonStyle.foregroundColor.
+    // The button provides the correct TextStyle via DefaultTextStyle from its style.
+    final labelWidget = Text(label);
     final iconWidget = icon;
 
     if (iconWidget == null) return labelWidget;
