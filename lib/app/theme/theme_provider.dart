@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'theme_notifier.dart';
 import 'theme_state.dart';
@@ -7,9 +7,7 @@ import 'theme_mode.dart';
 
 /// Exposes [ThemeState] to the app.
 final themeProvider =
-StateNotifierProvider<ThemeNotifier, ThemeState>(
-      (ref) => ThemeNotifier(),
-);
+    NotifierProvider<ThemeNotifier, ThemeState>(ThemeNotifier.new);
 
 /// Converts [AppThemeMode] to Flutter [ThemeMode].
 final materialThemeModeProvider = Provider<ThemeMode>((ref) {

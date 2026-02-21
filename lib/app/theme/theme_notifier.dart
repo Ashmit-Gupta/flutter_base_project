@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'theme_state.dart';
 import 'theme_mode.dart';
@@ -7,14 +7,12 @@ import 'theme_mode.dart';
 ///
 /// This is the ONLY place allowed
 /// to modify theme-related values.
-class ThemeNotifier extends StateNotifier<ThemeState> {
-  ThemeNotifier()
-      : super(
-    const ThemeState(
-      mode: AppThemeMode.system,
-      fontFamily: 'Roboto',
-    ),
-  );
+class ThemeNotifier extends Notifier<ThemeState> {
+  @override
+  ThemeState build() => const ThemeState(
+        mode: AppThemeMode.system,
+        fontFamily: 'Roboto',
+      );
 
   void setThemeMode(AppThemeMode mode) {
     state = state.copyWith(mode: mode);

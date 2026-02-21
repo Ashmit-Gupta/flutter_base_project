@@ -14,6 +14,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_button_variant.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../providers/auth_providers.dart';
+import '../view_models/signup_form_state.dart';
 import '../view_models/signup_view_model.dart';
 
 class SignupScreen extends HookConsumerWidget {
@@ -25,9 +26,23 @@ class SignupScreen extends HookConsumerWidget {
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
     final formKey = useMemoized(GlobalKey<FormState>.new);
-    final isLoading = useState(false);
 
-    final viewModel = ref.watch(signupViewModelProvider);
+    final signupState = ref.watch(signupViewModelProvider);
+    final signupViewModel = ref.read(signupViewModelProvider.notifier);
+
+    ref.listen<SignupFormState>(signupViewModelProvider, (prev, next) {
+      if (next.isSuccess) {
+        AppSnackbar.success(context, 'Account created successfully');
+        signupViewModel.onSuccessHandled();
+        context.replace(AppRoutes.login);
+      } else if (next.isFailure) {
+        AppSnackbar.error(
+          context,
+          next.errorMessage ?? 'Something went wrong',
+        );
+        signupViewModel.onFailureHandled();
+      }
+    });
 
     return Scaffold(
       body: SafeArea(
@@ -37,17 +52,14 @@ class SignupScreen extends HookConsumerWidget {
             nameController: nameController,
             emailController: emailController,
             passwordController: passwordController,
-            isLoading: isLoading.value,
-            viewModel: viewModel,
-            onSignup: () => _handleSignup(
-              context,
-              ref,
+            isSubmitting: signupState.isSubmitting,
+            viewModel: signupViewModel,
+            onSignup: () => _onSignupPressed(
               formKey,
               nameController,
               emailController,
               passwordController,
-              viewModel,
-              isLoading,
+              signupViewModel,
             ),
             onSwitchToLogin: () => context.replace(AppRoutes.login),
           ),
@@ -56,17 +68,14 @@ class SignupScreen extends HookConsumerWidget {
             nameController: nameController,
             emailController: emailController,
             passwordController: passwordController,
-            isLoading: isLoading.value,
-            viewModel: viewModel,
-            onSignup: () => _handleSignup(
-              context,
-              ref,
+            isSubmitting: signupState.isSubmitting,
+            viewModel: signupViewModel,
+            onSignup: () => _onSignupPressed(
               formKey,
               nameController,
               emailController,
               passwordController,
-              viewModel,
-              isLoading,
+              signupViewModel,
             ),
             onSwitchToLogin: () => context.replace(AppRoutes.login),
           ),
@@ -75,17 +84,14 @@ class SignupScreen extends HookConsumerWidget {
             nameController: nameController,
             emailController: emailController,
             passwordController: passwordController,
-            isLoading: isLoading.value,
-            viewModel: viewModel,
-            onSignup: () => _handleSignup(
-              context,
-              ref,
+            isSubmitting: signupState.isSubmitting,
+            viewModel: signupViewModel,
+            onSignup: () => _onSignupPressed(
               formKey,
               nameController,
               emailController,
               passwordController,
-              viewModel,
-              isLoading,
+              signupViewModel,
             ),
             onSwitchToLogin: () => context.replace(AppRoutes.login),
           ),
@@ -94,36 +100,19 @@ class SignupScreen extends HookConsumerWidget {
     );
   }
 
-  Future<void> _handleSignup(
-    BuildContext context,
-    WidgetRef ref,
+  void _onSignupPressed(
     GlobalKey<FormState> formKey,
     TextEditingController nameController,
     TextEditingController emailController,
     TextEditingController passwordController,
     SignupViewModel viewModel,
-    ValueNotifier<bool> isLoading,
-  ) async {
+  ) {
     if (formKey.currentState?.validate() != true) return;
-
-    isLoading.value = true;
-    try {
-      final success = await viewModel.submit(
-        name: nameController.text.trim(),
-        email: emailController.text.trim(),
-        password: passwordController.text,
-      );
-      if (success && context.mounted) {
-        AppSnackbar.success(context, 'Account created successfully');
-        context.replace(AppRoutes.login);
-      } else if (context.mounted) {
-        AppSnackbar.error(context, 'Something went wrong');
-      }
-    } finally {
-      if (context.mounted) {
-        isLoading.value = false;
-      }
-    }
+    viewModel.onSubmitPressed(
+      name: nameController.text.trim(),
+      email: emailController.text.trim(),
+      password: passwordController.text,
+    );
   }
 }
 
@@ -133,7 +122,7 @@ class _SignupLayout extends StatelessWidget {
     required this.nameController,
     required this.emailController,
     required this.passwordController,
-    required this.isLoading,
+    required this.isSubmitting,
     required this.viewModel,
     required this.onSignup,
     required this.onSwitchToLogin,
@@ -143,7 +132,7 @@ class _SignupLayout extends StatelessWidget {
   final TextEditingController nameController;
   final TextEditingController emailController;
   final TextEditingController passwordController;
-  final bool isLoading;
+  final bool isSubmitting;
   final SignupViewModel viewModel;
   final VoidCallback onSignup;
   final VoidCallback onSwitchToLogin;
@@ -222,7 +211,7 @@ class _SignupLayout extends StatelessWidget {
                     label: 'Sign up',
                     onPressed: onSignup,
                     variant: AppButtonVariant.primary,
-                    loading: isLoading,
+                    loading: isSubmitting,
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   Row(

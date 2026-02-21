@@ -14,6 +14,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_button_variant.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../providers/auth_providers.dart';
+import '../view_models/login_form_state.dart';
 import '../view_models/login_view_model.dart';
 
 class LoginScreen extends HookConsumerWidget {
@@ -24,9 +25,22 @@ class LoginScreen extends HookConsumerWidget {
     final nameController = useTextEditingController();
     final passwordController = useTextEditingController();
     final formKey = useMemoized(GlobalKey<FormState>.new);
-    final isLoading = useState(false);
 
-    final viewModel = ref.watch(loginViewModelProvider);
+    final loginState = ref.watch(loginViewModelProvider);
+    final loginViewModel = ref.read(loginViewModelProvider.notifier);
+
+    ref.listen<LoginFormState>(loginViewModelProvider, (prev, next) {
+      if (next.isSuccess) {
+        AppSnackbar.success(context, 'Signed in successfully');
+        loginViewModel.onSuccessHandled();
+      } else if (next.isFailure) {
+        AppSnackbar.error(
+          context,
+          next.errorMessage ?? 'Something went wrong',
+        );
+        loginViewModel.onFailureHandled();
+      }
+    });
 
     return Scaffold(
       body: SafeArea(
@@ -35,15 +49,13 @@ class LoginScreen extends HookConsumerWidget {
             formKey: formKey,
             nameController: nameController,
             passwordController: passwordController,
-            isLoading: isLoading.value,
-            viewModel: viewModel,
-            onLogin: () => _handleLogin(
-              context,
+            isSubmitting: loginState.isSubmitting,
+            viewModel: loginViewModel,
+            onLogin: () => _onLoginPressed(
               formKey,
               nameController,
               passwordController,
-              viewModel,
-              isLoading,
+              loginViewModel,
             ),
             onForgotPassword: () => context.push(AppRoutes.forgotPassword),
             onSwitchToSignup: () => context.replace(AppRoutes.signup),
@@ -52,15 +64,13 @@ class LoginScreen extends HookConsumerWidget {
             formKey: formKey,
             nameController: nameController,
             passwordController: passwordController,
-            isLoading: isLoading.value,
-            viewModel: viewModel,
-            onLogin: () => _handleLogin(
-              context,
+            isSubmitting: loginState.isSubmitting,
+            viewModel: loginViewModel,
+            onLogin: () => _onLoginPressed(
               formKey,
               nameController,
               passwordController,
-              viewModel,
-              isLoading,
+              loginViewModel,
             ),
             onForgotPassword: () => context.push(AppRoutes.forgotPassword),
             onSwitchToSignup: () => context.replace(AppRoutes.signup),
@@ -69,15 +79,13 @@ class LoginScreen extends HookConsumerWidget {
             formKey: formKey,
             nameController: nameController,
             passwordController: passwordController,
-            isLoading: isLoading.value,
-            viewModel: viewModel,
-            onLogin: () => _handleLogin(
-              context,
+            isSubmitting: loginState.isSubmitting,
+            viewModel: loginViewModel,
+            onLogin: () => _onLoginPressed(
               formKey,
               nameController,
               passwordController,
-              viewModel,
-              isLoading,
+              loginViewModel,
             ),
             onForgotPassword: () => context.push(AppRoutes.forgotPassword),
             onSwitchToSignup: () => context.replace(AppRoutes.signup),
@@ -87,32 +95,17 @@ class LoginScreen extends HookConsumerWidget {
     );
   }
 
-  Future<void> _handleLogin(
-    BuildContext context,
+  void _onLoginPressed(
     GlobalKey<FormState> formKey,
     TextEditingController nameController,
     TextEditingController passwordController,
     LoginViewModel viewModel,
-    ValueNotifier<bool> isLoading,
-  ) async {
+  ) {
     if (formKey.currentState?.validate() != true) return;
-
-    isLoading.value = true;
-    try {
-      final success = await viewModel.submit(
-        name: nameController.text.trim(),
-        password: passwordController.text,
-      );
-      if (success && context.mounted) {
-        AppSnackbar.success(context, 'Signed in successfully');
-      } else if (context.mounted) {
-        AppSnackbar.error(context, 'Something went wrong');
-      }
-    } finally {
-      if (context.mounted) {
-        isLoading.value = false;
-      }
-    }
+    viewModel.onSubmitPressed(
+      name: nameController.text.trim(),
+      password: passwordController.text,
+    );
   }
 }
 
@@ -121,7 +114,7 @@ class _LoginLayout extends StatelessWidget {
     required this.formKey,
     required this.nameController,
     required this.passwordController,
-    required this.isLoading,
+    required this.isSubmitting,
     required this.viewModel,
     required this.onLogin,
     required this.onForgotPassword,
@@ -131,7 +124,7 @@ class _LoginLayout extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final TextEditingController nameController;
   final TextEditingController passwordController;
-  final bool isLoading;
+  final bool isSubmitting;
   final LoginViewModel viewModel;
   final VoidCallback onLogin;
   final VoidCallback onForgotPassword;
@@ -220,7 +213,7 @@ class _LoginLayout extends StatelessWidget {
                     label: 'Sign in',
                     onPressed: onLogin,
                     variant: AppButtonVariant.primary,
-                    loading: isLoading,
+                    loading: isSubmitting,
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   Row(
