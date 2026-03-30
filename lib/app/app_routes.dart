@@ -5,8 +5,10 @@ import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup_screen.dart';
 import '../features/design_system_screen.dart';
+import '../home.dart';
 import 'observers/route_observer.dart';
 import 'routes.dart';
+import '../features/splash/presentation/screens/splash_screen.dart';
 
 // Screens (placeholders for now)
 
@@ -18,14 +20,14 @@ class AppRouter {
       observers: [
         _routeObserver,
       ],
-      // initialLocation: AppRoutes.home,
-      initialLocation: AppRoutes.designSystemScreen,
-      debugLogDiagnostics: true,
+      initialLocation: AppRoutes.splash,
+      // initialLocation: AppRoutes.designSystemScreen,
+      debugLogDiagnostics: false,
       routes: [
-        // GoRoute(
-        //   path: AppRoutes.splash,
-        //   // builder: (context, state) => const SplashScreen(),
-        // ),
+        GoRoute(
+          path: AppRoutes.splash,
+          builder: (context, state) => const SplashScreen(),
+        ),
         GoRoute(
           path: AppRoutes.login,
           builder: (context, state) => const LoginScreen(),
@@ -42,10 +44,10 @@ class AppRouter {
           path: AppRoutes.designSystemScreen,
           builder: (context, state) => const DesignSystemScreen(),
         ),
-        // GoRoute(
-        //   path: AppRoutes.home,
-        //   // builder: (context, state) => const HomeScreen(),
-        // ),
+        GoRoute(
+          path: AppRoutes.home,
+          builder: (context, state) => const HomeScreen(),
+        ),
       ],
 
       errorBuilder: (context, state) {

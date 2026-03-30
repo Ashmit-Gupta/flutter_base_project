@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:basic_project_setup/core/di/di.dart';
+import 'package:basic_project_setup/features/auth/data/repo/auth_repo.dart';
 import 'login_form_state.dart';
 
 /// Login form ViewModel — UI state + event handlers.
@@ -7,13 +9,19 @@ import 'login_form_state.dart';
 /// Uses [Notifier] with [LoginFormState]. State is UI-driven.
 /// Async work is an implementation detail; only state transitions are emitted.
 class LoginViewModel extends Notifier<LoginFormState> {
-  @override
-  LoginFormState build() => const LoginFormState();
+  late final AuthRepository _auth;
 
-  /// Validates name field. Returns error message or null if valid.
-  String? validateName(String? value) {
+  @override
+  LoginFormState build() {
+    // Provided by `registerAuthFeature()` (see `lib/main.dart`).
+    _auth = getIt<AuthRepository>();
+    return const LoginFormState();
+  }
+
+  /// Validates Email field. Returns error message or null if valid.
+  String? validateEmail(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Name is required';
+      return 'Email is required';
     }
     return null;
   }
@@ -30,26 +38,46 @@ class LoginViewModel extends Notifier<LoginFormState> {
   ///
   /// UI must NOT await this. UI watches state and reacts to success/failure.
   void onSubmitPressed({
-    required String name,
+    required String email,
     required String password,
   }) {
-    if (validateName(name) != null || validatePassword(password) != null) {
+    if (state.isSubmitting) return;
+    if (validateEmail(email) != null || validatePassword(password) != null) {
       return;
     }
     state = state.copyWith(status: LoginFormStatus.submitting);
-    _performSubmit(name, password);
+    _performSubmit(email, password);
   }
 
-  Future<void> _performSubmit(String name, String password) async {
+  Future<void> _performSubmit(String email, String password) async {
     try {
-      if (state.isSubmitting) return;
-      // Placeholder: would call auth repository
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-      state = state.copyWith(status: LoginFormStatus.success);
+      final either = await _auth
+          .login(
+            email: email.trim(),
+            password: password,
+          )
+          .run();
+
+      either.match(
+        (failure) {
+          state = state.copyWith(
+            status: LoginFormStatus.failure,
+            errorMessage: failure.message,
+          );
+          return null;
+        },
+        (response) {
+          state = state.copyWith(
+            status: LoginFormStatus.success,
+            errorMessage: null,
+          );
+          return null;
+        },
+      );
     } catch (e) {
       state = state.copyWith(
         status: LoginFormStatus.failure,
-        errorMessage: e.toString(),
+        errorMessage: 'Something went wrong',
       );
     }
   }

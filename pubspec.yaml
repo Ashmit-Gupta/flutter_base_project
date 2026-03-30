@@ -18,7 +18,7 @@ dependencies:
   go_router: ^17.1.0
   dio: ^5.9.1
   get_it: ^9.2.0
-  shared_preferences: ^2.5.4
+  shared_preferences: ^2.5.5
   equatable: ^2.0.8
   logger: ^2.6.2
   flutter_animate: ^4.5.2
@@ -49,6 +49,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/animations/
+    - assets/ca/
 
   # fonts:
   #   - family: Schyler

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:logger/logger.dart';
 
 enum LogLevel {
   debug,
@@ -9,10 +10,22 @@ enum LogLevel {
 
 class AppLogger {
   final bool enableLogging;
+  late final Logger _logger;
 
-  const AppLogger({
+  AppLogger({
     required this.enableLogging,
-  });
+  }) {
+    _logger = Logger(
+      printer: PrettyPrinter(
+        methodCount: 0,
+        errorMethodCount: 12,
+        lineLength: 120,
+        colors: true,
+        printEmojis: true,
+      ),
+      output: _FlutterOutput(),
+    );
+  }
 
   void log(
       String message, {
@@ -22,18 +35,20 @@ class AppLogger {
       }) {
     if (!enableLogging) return;
 
-    final buffer = StringBuffer()
-      ..write('[${level.name.toUpperCase()}] ')
-      ..write(message);
-
-    if (error != null) {
-      buffer.write(' | error: $error');
-    }
-
-    debugPrint(buffer.toString());
-
-    if (stackTrace != null) {
-      debugPrint(stackTrace.toString());
+    final msg = message;
+    switch (level) {
+      case LogLevel.debug:
+        _logger.d(msg);
+        break;
+      case LogLevel.info:
+        _logger.i(msg);
+        break;
+      case LogLevel.warning:
+        _logger.w(msg);
+        break;
+      case LogLevel.error:
+        _logger.e(msg, error: error, stackTrace: stackTrace);
+        break;
     }
   }
 
@@ -54,5 +69,14 @@ class AppLogger {
       error: error,
       stackTrace: stackTrace,
     );
+  }
+}
+
+class _FlutterOutput extends LogOutput {
+  @override
+  void output(OutputEvent event) {
+    for (final line in event.lines) {
+      debugPrint(line);
+    }
   }
 }

@@ -72,11 +72,26 @@ class ValidationException extends AppException {
 class ParsingException extends AppException {
   final String source;
   final Object? rawData;
+  /// JSON field path where parsing failed (e.g. `user.profile.age` or `items[0]`).
+  final String? path;
+
+  /// Human-readable expected runtime type (e.g. `int`, `String`, `Map<String, dynamic>`).
+  final String? expectedType;
+
+  /// Human-readable actual runtime type.
+  final String? actualType;
+
+  /// The actual value that failed to parse/convert (best-effort).
+  final Object? value;
 
   const ParsingException(
       super.message, {
         required this.source,
         this.rawData,
+      this.path,
+      this.expectedType,
+      this.actualType,
+      this.value,
         super.cause,
         super.stackTrace,
       });
@@ -86,6 +101,10 @@ class ParsingException extends AppException {
     ...super.props,
     source,
     rawData,
+    path,
+    expectedType,
+    actualType,
+    value,
   ];
 }
 

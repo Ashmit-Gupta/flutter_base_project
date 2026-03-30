@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/app.dart';
 import 'app/app_config.dart';
 import 'core/di/di.dart';
+import 'core/di/register_features_di.dart';
 import 'core/error/config_exception.dart';
 import 'core/logging/bootstrap_logger.dart';
 
@@ -71,6 +72,7 @@ Future<void> _bootstrap() async {
     final appConfig = AppConfigFactory.fromDotEnv();
 
     await setupDI(appConfig);
+    registerFeatures();
 
     runApp(const ProviderScope(child: App()));
   } on BootstrapException  catch (e, st) {

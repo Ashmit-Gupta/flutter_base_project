@@ -53,3 +53,5 @@ app.*.map.json
 /windows/flutter/generated_plugins.cmake
 
 /macos/Flutter/GeneratedPluginRegistrant.swift
+
+/assets/ca
