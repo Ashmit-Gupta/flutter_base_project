@@ -1,4 +1,4 @@
-package com.example.basic_project_setup
+package com.ienergy.oneApp
 
 import io.flutter.embedding.android.FlutterActivity
 

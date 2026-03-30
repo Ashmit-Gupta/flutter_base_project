@@ -1,157 +1,209 @@
 import 'package:flutter/material.dart';
 
-/// Contract for all app colors.
+/// Contract for all app colors in OneAttendance.
 ///
 /// ❌ Widgets must NEVER use [Color] directly.
 /// ✅ Widgets must ONLY depend on [AppColors].
 ///
 /// This enables:
 /// - Centralized theming
-/// - Light / Dark mode
-/// - Brand refresh without refactors
-/// - Backend / remote theming
-/// - Consistent UX across features
+/// - Light / Dark mode switching
+/// - Brand refresh without widget refactors
+/// - Remote / backend theming support
+/// - Consistent UX across admin & employee flows
 abstract class AppColors {
   /* ───────────────── Brand Colors ───────────────── */
 
-  /// Primary brand color.
+  /// Primary brand color (Indigo).
   ///
   /// Usage:
-  /// - Primary CTA buttons (Redeem, Transfer, Pay)
-  /// - Active navigation items
-  /// - QR code highlights
-  /// - Success emphasis
+  /// - Admin CTA buttons (Add Employee, Export, Save)
+  /// - Active navigation / bottom bar items
+  /// - Selected states & focus rings
+  /// - Primary action emphasis
   Color get primary;
 
-  /// Darker shade of primary color.
+  /// Darker shade of primary — pressed & emphasized states.
   ///
   /// Usage:
-  /// - Pressed button states
-  /// - Active icons
-  /// - Emphasized UI elements
+  /// - Button press/ripple target color
+  /// - Active icon fills
+  /// - Emphasized headers or banners
   Color get primaryDark;
 
-  /// Light tint of primary color.
+  /// Light tint of primary — low-emphasis containers.
   ///
   /// Usage:
-  /// - Button backgrounds (low emphasis)
-  /// - Success containers
-  /// - Highlighted cards
+  /// - Admin badge backgrounds
+  /// - Role pill containers
+  /// - Highlighted filter chips
+  /// - Selected row tint in data tables
   Color get primaryLight;
 
-  /// Content color on primary/error backgrounds.
+  /// Content color rendered on primary-colored surfaces.
   ///
   /// Usage:
-  /// - Primary button label
-  /// - Danger button label
-  /// - Icons on filled CTAs
+  /// - Label text on filled indigo buttons
+  /// - Icons inside primary FABs
+  /// - Text on admin header bars
   Color get onPrimary;
 
-  /// Secondary color for trust & finance.
+  /// Secondary brand color (Teal) — biometric & tech feel.
   ///
   /// Usage:
-  /// - Wallet balance
-  /// - Links
-  /// - Informational UI
-  /// - Transfers
+  /// - Face scan ring / pulse animation
+  /// - Verification checkmarks
+  /// - Camera overlay guides
+  /// - "Scan Now" CTA variant
   Color get secondary;
+
+  /// Content color rendered on secondary-colored surfaces.
+  ///
+  /// Usage:
+  /// - Icons/labels on teal-filled chips or badges
+  /// - Text inside scan confirmation overlays
+  Color get onSecondary;
 
   /* ───────────────── Backgrounds ───────────────── */
 
-  /// Main app background color.
+  /// Main app / scaffold background.
   ///
   /// Usage:
-  /// - Scaffold background
-  /// - Page backgrounds
+  /// - Scaffold background color
+  /// - Tablet idle screen background
+  /// - Page root backgrounds
   Color get background;
 
-  /// Card / surface background.
+  /// Primary surface color — cards, panels, dialogs.
   ///
   /// Usage:
-  /// - Cards
+  /// - Employee profile cards
   /// - Bottom sheets
-  /// - Dialogs
+  /// - Alert dialogs
+  /// - Admin dashboard panels
   Color get surface;
+
+  /// Elevated surface — cards on top of other cards.
+  ///
+  /// Usage:
+  /// - Nested containers (stats inside dashboard cards)
+  /// - Highlighted rows inside a panel
+  /// - Summary chips on overview screens
+  Color get surfaceElevated;
 
   /// Divider & border color.
   ///
   /// Usage:
-  /// - List separators
-  /// - Input borders
+  /// - List item separators
+  /// - Text field borders
   /// - Card outlines
+  /// - Section dividers in attendance logs
   Color get border;
 
   /* ───────────────── Text Colors ───────────────── */
 
-  /// Primary text color.
+  /// Primary text — highest emphasis.
   ///
   /// Usage:
-  /// - Headings
-  /// - Important values
+  /// - Employee names
+  /// - Section headings
+  /// - Large time displays (check-in clock)
   Color get textPrimary;
 
-  /// Secondary text color.
+  /// Secondary text — medium emphasis.
   ///
   /// Usage:
-  /// - Body text
-  /// - Labels
-  /// - Descriptions
+  /// - Job title / department
+  /// - Timestamps & dates
+  /// - Table column values
   Color get textSecondary;
 
-  /// Muted / disabled text color.
+  /// Muted / disabled text — lowest emphasis.
   ///
   /// Usage:
-  /// - Placeholders
-  /// - Disabled buttons
-  /// - Hint text
+  /// - Input placeholder text
+  /// - Empty state descriptions
+  /// - Disabled button labels
+  /// - "No data" indicators
   Color get textMuted;
 
   /* ───────────────── Status Colors ───────────────── */
 
-  /// Success color.
+  /// Success — positive confirmations.
   ///
   /// Usage:
-  /// - Successful redemption
-  /// - Active coupons
-  /// - Positive confirmations
+  /// - Face recognition verified toast
+  /// - Employee onboarded successfully
+  /// - Export completed
   Color get success;
 
-  /// Warning color.
+  /// Warning — requires attention.
   ///
   /// Usage:
-  /// - Pending actions
-  /// - Low balance
-  /// - Attention required
+  /// - Late check-in badge
+  /// - Unreviewed log flag
+  /// - Low-recognition-confidence alert
   Color get warning;
 
-  /// Error color.
+  /// Error — failures & rejections.
   ///
   /// Usage:
-  /// - Failed transactions
-  /// - Expired coupons
-  /// - Validation errors
+  /// - Face scan failed
+  /// - Unrecognized employee
+  /// - Form validation errors
+  /// - Absent status indicator
   Color get error;
 
-  /* ───────────────── Transaction Semantics ───────────────── */
+  /* ───────────────── Attendance Semantics ───────────────── */
 
-  /// Credit color (money received).
+  /// Present color — employee successfully checked in.
   ///
   /// Usage:
-  /// - Incoming transfers
-  /// - Coupon allocations
-  Color get credit;
+  /// - "Present" badge / chip
+  /// - Check-in confirmation ring
+  /// - Attendance log row tint
+  /// - Daily summary present count
+  Color get present;
 
-  /// Debit color (money spent).
+  /// Absent color — employee did not check in.
   ///
   /// Usage:
-  /// - Fuel redemption
-  /// - Purchases
-  Color get debit;
+  /// - "Absent" badge / chip
+  /// - Missing log row indicator
+  /// - Attendance summary absent count
+  Color get absent;
 
-  /// Neutral transaction color.
+  /// Late color — employee checked in after scheduled time.
   ///
   /// Usage:
-  /// - Fees
-  /// - System adjustments
-  Color get neutral;
+  /// - "Late" badge / chip
+  /// - Late arrival flag in logs
+  /// - Attendance summary late count
+  Color get late;
+
+  /// On-leave color — approved leave / holiday / day off.
+  ///
+  /// Usage:
+  /// - "On Leave" badge / chip
+  /// - Leave calendar day tint
+  /// - Approved leave log entries
+  Color get onLeave;
+
+  /* ───────────────── Role & Access ───────────────── */
+
+  /// Admin role accent color.
+  ///
+  /// Usage:
+  /// - "Admin" role badge
+  /// - Admin-only action buttons
+  /// - Admin drawer header accent
+  Color get adminAccent;
+
+  /// Employee role accent color.
+  ///
+  /// Usage:
+  /// - "Employee" role badge
+  /// - Employee profile avatar ring
+  /// - Employee list row accent
+  Color get employeeAccent;
 }
