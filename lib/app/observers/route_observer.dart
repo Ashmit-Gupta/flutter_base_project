@@ -1,10 +1,11 @@
 import 'package:flutter/widgets.dart';
 
 import '../../core/logging/app_logger.dart';
-import '../../core/di/di.dart';
 
 class AppRouteObserver extends NavigatorObserver {
-  final AppLogger _logger = getIt<AppLogger>();
+  final AppLogger _logger;
+
+  AppRouteObserver(this._logger);
 
   @override
   void didPush(Route route, Route? previousRoute) {

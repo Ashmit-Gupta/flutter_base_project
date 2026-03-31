@@ -1,18 +1,14 @@
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 import '../error/app_exceptions.dart';
-import '../../features/auth/constants/auth_constants.dart';
 import '../logging/app_logger.dart';
 
 class DioAppInterceptor extends Interceptor {
   final AppLogger logger;
-  late final Future<SharedPreferences> _prefsFuture;
+  final Future<String?> Function() readToken;
 
-  DioAppInterceptor(this.logger) {
-    _prefsFuture = SharedPreferences.getInstance();
-  }
+  DioAppInterceptor(this.logger, {required this.readToken});
 
   @override
   Future<void> onRequest(
@@ -29,8 +25,7 @@ class DioAppInterceptor extends Interceptor {
         'query: ${_pretty(options.queryParameters)}\n'
         'body: ${_pretty(options.data)}');
 
-    final prefs = await _prefsFuture;
-    final token = prefs.getString(AuthConstants.tokenKey);
+    final token = await readToken();
 
     // Only attach bearer token when we actually have one.
     final headers = options.headers;

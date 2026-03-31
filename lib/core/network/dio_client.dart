@@ -16,6 +16,7 @@ class DioClient {
   factory DioClient(
       AppConfig config,
       AppLogger logger,
+      Future<String?> Function() readToken,
       ) {
     final dio = Dio(
       BaseOptions(
@@ -31,7 +32,7 @@ class DioClient {
     );
 
     dio.interceptors.addAll([
-      DioAppInterceptor(logger),
+      DioAppInterceptor(logger, readToken: readToken),
     ]);
 
     // Dev-only: allow self-signed / invalid certificates (common on local envs).

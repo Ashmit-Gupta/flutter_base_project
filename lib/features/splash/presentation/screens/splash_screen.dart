@@ -1,30 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/di/di.dart';
-import '../../../auth/data/data_source/local_data_source/auth_local_data_source.dart';
 import '../../../../app/routes.dart';
+import '../../../auth/domain/auth_state.dart';
+import '../../../auth/presentation/providers/auth_session_provider.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  bool _hasToken = false;
+  bool _animationCompleted = false;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
     super.initState();
-
-    // Token is considered valid when it is non-null and non-empty.
-    final local = getIt<AuthLocalDataSource>();
-    final token = local.getToken();
-    _hasToken = token != null && token.trim().isNotEmpty;
 
     _controller = AnimationController(
       vsync: this,
@@ -33,12 +30,8 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.addStatusListener((status) {
       if (status != AnimationStatus.completed) return;
-
-      final targetRoute =
-          _hasToken ? AppRoutes.home : AppRoutes.login;
-
-      if (!mounted) return;
-      context.go(targetRoute);
+      _animationCompleted = true;
+      _navigateByAuth(ref.read(authSessionProvider));
     });
 
     _controller.forward();
@@ -52,6 +45,10 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<AuthState>>(authSessionProvider, (prev, next) {
+      _navigateByAuth(next);
+    });
+
     final t = _controller;
     final fade = CurvedAnimation(parent: t, curve: const Interval(0.2, 1));
     final scale = Tween<double>(begin: 0.88, end: 1.0).animate(
@@ -198,6 +195,18 @@ class _SplashScreenState extends State<SplashScreen>
         );
       },
     );
+  }
+
+  void _navigateByAuth(AsyncValue<AuthState> authState) {
+    if (!_animationCompleted || _hasNavigated || !mounted) return;
+    if (authState.isLoading) return;
+
+    final target = switch (authState) {
+      AsyncData(:final value) when value is Authenticated => AppRoutes.home,
+      _ => AppRoutes.login,
+    };
+    _hasNavigated = true;
+    context.go(target);
   }
 }
 

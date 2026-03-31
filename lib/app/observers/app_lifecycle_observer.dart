@@ -1,10 +1,11 @@
 import 'package:flutter/widgets.dart';
 
 import '../../core/logging/app_logger.dart';
-import '../../core/di/di.dart';
 
 class AppLifecycleObserver with WidgetsBindingObserver {
-  final AppLogger _logger = getIt<AppLogger>();
+  final AppLogger _logger;
+
+  AppLifecycleObserver(this._logger);
 
   void register() {
     WidgetsBinding.instance.addObserver(this);

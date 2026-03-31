@@ -30,15 +30,32 @@ class AuthRepository {
           throw StatusException(response.message);
         }
 
-        // On success, persist auth session locally.
+        // On success, persist auth session locally (email from login form).
         await local.saveAuthSession(
           token: response.data.token,
           orgId: response.data.orgId,
+          email: email,
         );
 
         return response;
       },
       (error, _) => error.toFailure(),
     );
+  }
+
+  Future<String?> getToken() async {
+    return local.getToken();
+  }
+
+  Future<String?> getUserEmail() async {
+    return local.getUserEmail();
+  }
+
+  Future<void> updateUserEmail(String email) {
+    return local.saveUserEmail(email);
+  }
+
+  Future<void> logout() {
+    return local.clearAuthSession();
   }
 }

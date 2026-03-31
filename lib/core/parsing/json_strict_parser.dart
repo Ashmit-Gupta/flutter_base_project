@@ -470,8 +470,8 @@ List<T> parsePrimitiveListStrict<T>(
 //
 // Example: inside a Riverpod Notifier/Provider method you have `ref`.
 //
-// final dio = getIt<Dio>();
-// final logger = getIt<AppLogger>();
+// final dio = ...;
+// final logger = ...;
 //
 // Future<User> login({
 //   required String username,

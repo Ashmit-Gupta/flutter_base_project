@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:basic_project_setup/core/di/di.dart';
-import 'package:basic_project_setup/features/auth/data/repo/auth_repo.dart';
+import 'package:basic_project_setup/features/auth/presentation/providers/auth_session_provider.dart';
 import 'login_form_state.dart';
 
 /// Login form ViewModel — UI state + event handlers.
@@ -9,12 +8,8 @@ import 'login_form_state.dart';
 /// Uses [Notifier] with [LoginFormState]. State is UI-driven.
 /// Async work is an implementation detail; only state transitions are emitted.
 class LoginViewModel extends Notifier<LoginFormState> {
-  late final AuthRepository _auth;
-
   @override
   LoginFormState build() {
-    // Provided by `registerAuthFeature()` (see `lib/main.dart`).
-    _auth = getIt<AuthRepository>();
     return const LoginFormState();
   }
 
@@ -51,28 +46,23 @@ class LoginViewModel extends Notifier<LoginFormState> {
 
   Future<void> _performSubmit(String email, String password) async {
     try {
-      final either = await _auth
-          .login(
+      await ref.read(authSessionProvider.notifier).login(
             email: email.trim(),
             password: password,
-          )
-          .run();
+          );
 
-      either.match(
-        (failure) {
-          state = state.copyWith(
-            status: LoginFormStatus.failure,
-            errorMessage: failure.message,
-          );
-          return null;
-        },
-        (response) {
-          state = state.copyWith(
-            status: LoginFormStatus.success,
-            errorMessage: null,
-          );
-          return null;
-        },
+      final authState = ref.read(authSessionProvider);
+      if (authState.hasError) {
+        state = state.copyWith(
+          status: LoginFormStatus.failure,
+          errorMessage: authState.error.toString(),
+        );
+        return;
+      }
+
+      state = state.copyWith(
+        status: LoginFormStatus.success,
+        errorMessage: null,
       );
     } catch (e) {
       state = state.copyWith(
