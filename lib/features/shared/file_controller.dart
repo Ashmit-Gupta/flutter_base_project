@@ -157,7 +157,8 @@ class FileController extends Notifier<List<AppFileModel>> {
     final count = state.length;
 
     if (count < minFiles || count > maxFiles) {
-      return 'Select between $minFiles and $maxFiles files.';
+      // return 'Select between $minFiles and $maxFiles files.';
+      return 'Select only $minFiles  files.';
     }
 
     return null;

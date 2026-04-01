@@ -28,7 +28,7 @@ dependencies:
   firebase_core: ^4.4.0
   skeletonizer: ^2.1.2
   flutter_hooks: ^0.21.3+1
-  hooks_riverpod: ^3.2.1
+  hooks_riverpod: ^3.3.1
   flutter_dotenv: ^6.0.0
   fpdart: ^1.2.0
   google_mlkit_face_detection: ^0.13.2

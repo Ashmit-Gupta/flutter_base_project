@@ -51,6 +51,7 @@ class AuthRepository {
     return local.getUserEmail();
   }
 
+  //todo add try catch !!!!!!
   Future<void> updateUserEmail(String email) {
     return local.saveUserEmail(email);
   }
