@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:io';
 
 import '../../core/di/core_providers.dart';
 import '../../core/logging/app_logger.dart';
@@ -7,17 +8,12 @@ import '../../core/services/file_picker_service.dart';
 import '../../features/shared/models/app_file_model.dart';
 import '../../features/shared/models/media_result.dart';
 
-final fileControllerProvider =
-NotifierProvider.autoDispose<FileController, List<AppFileModel>>(
-  FileController.new,
-);
+final fileControllerProvider = NotifierProvider.autoDispose<FileController, List<AppFileModel>>(FileController.new);
 
 class FileController extends Notifier<List<AppFileModel>> {
-  FileSelectionService get _fileService =>
-      ref.read(fileSelectionServiceProvider);
+  FileSelectionService get _fileService => ref.read(fileSelectionServiceProvider);
 
-  MediaService get _mediaService =>
-      ref.read(mediaServiceProvider);
+  MediaService get _mediaService => ref.read(mediaServiceProvider);
 
   AppLogger get _logger => ref.read(appLoggerProvider);
 
@@ -26,28 +22,15 @@ class FileController extends Notifier<List<AppFileModel>> {
 
   // ================= FILE PICKER =================
 
-  Future<String?> pickFiles({
-    required int maxFiles,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    bool allowMultiple = true,
-  }) async {
+  Future<String?> pickFiles({required int maxFiles, FileType type = FileType.any, List<String>? allowedExtensions, bool allowMultiple = true}) async {
     try {
-      final files = await _fileService.pickFiles(
-        type: type,
-        allowedExtensions: allowedExtensions,
-        allowMultiple: allowMultiple,
-      );
+      final files = await _fileService.pickFiles(type: type, allowedExtensions: allowedExtensions, allowMultiple: allowMultiple);
 
       if (files.isEmpty) return 'No files selected';
 
       return _mergeWithConstraints(files, maxFiles);
     } catch (e, st) {
-      _logger.error(
-        '[FileController] pickFiles failed',
-        error: e,
-        stackTrace: st,
-      );
+      _logger.error('[FileController] pickFiles failed', error: e, stackTrace: st);
       return 'Failed to pick files';
     }
   }
@@ -72,11 +55,7 @@ class FileController extends Notifier<List<AppFileModel>> {
           return 'Camera failed';
       }
     } catch (e, st) {
-      _logger.error(
-        '[FileController] pickFromCamera failed',
-        error: e,
-        stackTrace: st,
-      );
+      _logger.error('[FileController] pickFromCamera failed', error: e, stackTrace: st);
       return 'Camera failed';
     }
   }
@@ -101,11 +80,7 @@ class FileController extends Notifier<List<AppFileModel>> {
           return 'Gallery failed';
       }
     } catch (e, st) {
-      _logger.error(
-        '[FileController] pickFromGallery failed',
-        error: e,
-        stackTrace: st,
-      );
+      _logger.error('[FileController] pickFromGallery failed', error: e, stackTrace: st);
       return 'Gallery failed';
     }
   }
@@ -130,11 +105,7 @@ class FileController extends Notifier<List<AppFileModel>> {
           return 'Video capture failed';
       }
     } catch (e, st) {
-      _logger.error(
-        '[FileController] pickVideoFromCamera failed',
-        error: e,
-        stackTrace: st,
-      );
+      _logger.error('[FileController] pickVideoFromCamera failed', error: e, stackTrace: st);
       return 'Video capture failed';
     }
   }
@@ -150,10 +121,7 @@ class FileController extends Notifier<List<AppFileModel>> {
 
   void clear() => state = [];
 
-  String? validateFileCount({
-    required int minFiles,
-    required int maxFiles,
-  }) {
+  String? validateFileCount({required int minFiles, required int maxFiles}) {
     final count = state.length;
 
     if (count < minFiles || count > maxFiles) {
@@ -166,8 +134,7 @@ class FileController extends Notifier<List<AppFileModel>> {
 
   // ================= INTERNAL =================
 
-  String? _mergeWithConstraints(
-      List<AppFileModel> incoming, int maxFiles) {
+  String? _mergeWithConstraints(List<AppFileModel> incoming, int maxFiles) {
     final merged = [...state];
     final seen = merged.map(_identity).toSet();
 
@@ -203,5 +170,121 @@ class FileController extends Notifier<List<AppFileModel>> {
 
   String _identity(AppFileModel file) {
     return '${file.name}|${file.path}|${file.size}';
+  }
+
+  List<AppFileModel> filesForProfile(String profileKey) {
+    return state
+        .where((file) => file.name.startsWith('${profileKey}_'))
+        .toList(growable: false);
+  }
+
+  Future<String?> pickFromGalleryForProfile({required String profileKey}) async {
+    try {
+      final result = await _mediaService.pickImageFromGallery();
+      switch (result.status) {
+        case MediaResultStatus.success:
+          if (result.files.isEmpty) return 'No file selected';
+          final first = result.files.first;
+          return upsertProfilePhoto(
+            profileKey: profileKey,
+            photoPath: first.path,
+          );
+        case MediaResultStatus.cancelled:
+          return 'No file selected';
+        case MediaResultStatus.permissionDenied:
+          return 'Permission denied. Please allow and try again.';
+        case MediaResultStatus.error:
+          return 'Gallery failed';
+      }
+    } catch (e, st) {
+      _logger.error(
+        '[FileController] pickFromGalleryForProfile failed',
+        error: e,
+        stackTrace: st,
+      );
+      return 'Gallery failed';
+    }
+  }
+
+  Future<String?> pickFromCameraForProfile({required String profileKey}) async {
+    try {
+      final result = await _mediaService.captureImage();
+      switch (result.status) {
+        case MediaResultStatus.success:
+          if (result.files.isEmpty) return 'No image captured';
+          final first = result.files.first;
+          return upsertProfilePhoto(
+            profileKey: profileKey,
+            photoPath: first.path,
+          );
+        case MediaResultStatus.cancelled:
+          return 'No image captured';
+        case MediaResultStatus.permissionDenied:
+          return 'Camera permission denied';
+        case MediaResultStatus.error:
+          return 'Camera failed';
+      }
+    } catch (e, st) {
+      _logger.error(
+        '[FileController] pickFromCameraForProfile failed',
+        error: e,
+        stackTrace: st,
+      );
+      return 'Camera failed';
+    }
+  }
+
+  String? addCapturedPhotoPath({required String photoPath, required int maxFiles}) {
+    final file = File(photoPath);
+    if (!file.existsSync()) {
+      return 'Captured photo not found.';
+    }
+    final appFile = AppFileModel(name: photoPath.split(Platform.pathSeparator).last, path: photoPath, size: file.lengthSync());
+    return _mergeWithConstraints(<AppFileModel>[appFile], maxFiles);
+  }
+
+  String? addCapturedPhotoPaths({required Map<String, String> photoPathByProfile, required int maxFiles}) {
+    final files = <AppFileModel>[];
+    photoPathByProfile.forEach((profileKey, path) {
+      final file = File(path);
+      if (!file.existsSync()) return;
+      files.add(AppFileModel(name: '${profileKey}_${path.split(Platform.pathSeparator).last}', path: path, size: file.lengthSync()));
+    });
+    if (files.isEmpty) return 'Captured photo not found.';
+    return _mergeWithConstraints(files, maxFiles);
+  }
+
+  String? upsertProfilePhoto({
+    required String profileKey,
+    required String photoPath,
+  }) {
+    final file = File(photoPath);
+    if (!file.existsSync()) return 'Selected photo not found.';
+    final fileName = photoPath.split(Platform.pathSeparator).last;
+    final appFile = AppFileModel(
+      name: '${profileKey}_$fileName',
+      path: photoPath,
+      size: file.lengthSync(),
+    );
+    final next = state
+        .where((f) => !f.name.startsWith('${profileKey}_'))
+        .toList(growable: true)
+      ..add(appFile);
+    state = next;
+    _logger.info(
+      '[FileController] profile-photo-upserted profile=$profileKey path=$photoPath',
+    );
+    return null;
+  }
+
+  void removeProfilePhoto(String profileKey) {
+    final before = state.length;
+    state = state
+        .where((file) => !file.name.startsWith('${profileKey}_'))
+        .toList(growable: false);
+    final after = state.length;
+    _logger.info(
+      '[FileController] profile-photo-removed profile=$profileKey removed=${before - after}',
+    );
   }
 }

@@ -1,0 +1,25 @@
+import 'dart:convert';
+import 'dart:io';
+
+import '../../../shared/models/app_file_model.dart';
+
+class RegisterEmployeeddaceDetectionImagesModel {
+  final AppFileModel leftProfile;
+  final AppFileModel frontProfile;
+  final AppFileModel rightProfile;
+
+  const RegisterEmployeeddaceDetectionImagesModel({required this.leftProfile, required this.frontProfile, required this.rightProfile});
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{'left_profile': _fileToJson(leftProfile), 'front_profile': _fileToJson(frontProfile), 'right_profile': _fileToJson(rightProfile)};
+  }
+
+  Map<String, dynamic> _fileToJson(AppFileModel file) {
+    return <String, dynamic>{'name': file.name, 'path': file.path, 'size': file.size, 'base64': _toBase64(file.path)};
+  }
+
+  String _toBase64(String path) {
+    final bytes = File(path).readAsBytesSync();
+    return base64Encode(bytes);
+  }
+}

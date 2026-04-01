@@ -15,32 +15,24 @@ import '../view_models/register_employee_view_model.dart';
 class RegisterEmployeeScreen extends HookConsumerWidget {
   const RegisterEmployeeScreen({super.key});
 
-  static const int _minUploads = 3;
-  static const int _maxUploads = 3;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final formKey = useMemoized(GlobalKey<FormState>.new);
     final employeeController = useTextEditingController();
-    ref.watch(registerEmployeeViewModelProvider);
+    final viewState = ref.watch(registerEmployeeViewModelProvider);
     final vm = ref.read(registerEmployeeViewModelProvider.notifier);
     final colors = context.theme.colors;
 
-    ref.listen<RegisterEmployeeState>(
-      registerEmployeeViewModelProvider,
-      (previous, next) {
+    ref.listen<RegisterEmployeeState>(registerEmployeeViewModelProvider, (previous, next) {
       final error = next.errorMessage;
       if (error != null && error.isNotEmpty && error != previous?.errorMessage) {
         AppSnackbar.error(context, error);
       }
-      },
-    );
+    });
 
-    void submit() {
-      final result = vm.submit(
+    Future<void> submit() async {
+      final result = await vm.submit(
         isFormValid: formKey.currentState?.validate() == true,
-        minUploads: _minUploads,
-        maxUploads: _maxUploads,
       );
       if (result.isError) {
         AppSnackbar.error(context, result.message);
@@ -51,22 +43,14 @@ class RegisterEmployeeScreen extends HookConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.pop(),
-        ),
+        leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => context.pop()),
         title: Text('Register Employee', style: context.text.title()),
       ),
       body: SafeArea(
         child: Form(
           key: formKey,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.md,
-            ),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -75,27 +59,36 @@ class RegisterEmployeeScreen extends HookConsumerWidget {
                   label: 'Select Employee',
                   hint: 'Enter Employee Name',
                   title: 'Select Employee',
-                  onSelected: vm.selectEmployeeByName,
+                  onSelected: (_) {},
                   bottomSheet: ReusableListBottomSheet<GetAllEmployeeUserModel>(
                     title: 'Select Employee',
                     showSearch: true,
                     searchHint: 'Search employee',
-                    onFetchPage: (page, limit) =>
-                        vm.fetchEmployeesForBottomSheet(
-                      page: page,
-                      limit: limit,
-                    ),
-                    labelBuilder: (_, employee) =>
-                        '${employee.name} (${employee.empCode})',
-                    onTap: (_, value) {
-                      Navigator.of(context).pop(value.name);
-                    },
+                    onFetchPage: (page, limit) => vm.fetchEmployeesForBottomSheet(page: page, limit: limit),
+                    labelBuilder: (_, employee) => '${employee.name} (${employee.empCode})',
+                    onTap: (_, value) => vm.selectEmployeeByName(value.name),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                FilePickerWidget(
-                  maxFiles: _maxUploads,
-                  fileTypesHint: 'Select Photos from gallery, camera',
+                const FilePickerWidget(
+                  title: 'Left Profile',
+                  maxFiles: 1,
+                  profileKey: 'left_profile',
+                  fileTypesHint: 'Select photo from gallery or camera',
+                ),
+                const SizedBox(height: AppSpacing.md),
+                const FilePickerWidget(
+                  title: 'Front Profile',
+                  maxFiles: 1,
+                  profileKey: 'front_profile',
+                  fileTypesHint: 'Select photo from gallery or camera',
+                ),
+                const SizedBox(height: AppSpacing.md),
+                const FilePickerWidget(
+                  title: 'Right Profile',
+                  maxFiles: 1,
+                  profileKey: 'right_profile',
+                  fileTypesHint: 'Select photo from gallery or camera',
                 ),
               ],
             ),
@@ -112,7 +105,11 @@ class RegisterEmployeeScreen extends HookConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: SizedBox(
               width: double.infinity,
-              child: AppButton(label: 'Submit', onPressed: submit),
+              child: AppButton(
+                label: 'Submit',
+                loading: viewState.isSubmitting,
+                onPressed: viewState.isSubmitting ? null : () => submit(),
+              ),
             ),
           ),
         ),

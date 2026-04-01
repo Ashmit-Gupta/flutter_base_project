@@ -7,33 +7,47 @@ import '../logging/app_logger.dart';
 class DioAppInterceptor extends Interceptor {
   final AppLogger logger;
   final Future<String?> Function() readToken;
+  final String Function() readDeviceId;
+  final String Function() readDevicePin;
 
-  DioAppInterceptor(this.logger, {required this.readToken});
+  DioAppInterceptor(
+    this.logger, {
+    required this.readToken,
+    required this.readDeviceId,
+    required this.readDevicePin,
+  });
 
   @override
   Future<void> onRequest(
       RequestOptions options,
       RequestInterceptorHandler handler,
       ) async {
-    final redactedHeaders = Map<String, dynamic>.from(options.headers);
+    final token = await readToken();
+
+    // Attach common headers on every request (including auth).
+    final headers = options.headers;
+    headers['x-device-id'] = readDeviceId();
+    headers['x-device-pin'] = readDevicePin();
+
+    // Only attach bearer token when we actually have one.
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    } else {
+      headers.remove('Authorization');
+    }
+
+    final redactedHeaders = Map<String, dynamic>.from(headers);
     if (redactedHeaders.containsKey('Authorization')) {
       redactedHeaders['Authorization'] = 'Bearer ***';
+    }
+    if (redactedHeaders.containsKey('x-device-pin')) {
+      redactedHeaders['x-device-pin'] = '***';
     }
 
     logger.debug('➡️ ${options.method} ${options.uri}\n'
         'headers: ${_pretty(redactedHeaders)}\n'
         'query: ${_pretty(options.queryParameters)}\n'
         'body: ${_pretty(options.data)}');
-
-    final token = await readToken();
-
-    // Only attach bearer token when we actually have one.
-    final headers = options.headers;
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
-    } else {
-      headers.remove('Authorization');
-    }
 
     handler.next(options);
   }

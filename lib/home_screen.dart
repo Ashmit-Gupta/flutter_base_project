@@ -11,6 +11,7 @@ import 'core/design/app_spacing.dart';
 import 'core/widgets/app_custom_app_bar.dart';
 import 'features/auth/domain/auth_state.dart';
 import 'features/auth/presentation/providers/auth_session_provider.dart';
+import 'features/face_detection/presentation/model/face_capture_config.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -32,6 +33,8 @@ class HomeScreen extends ConsumerWidget {
         icon: Icons.fact_check_rounded,
         start: Color(0xFF059669),
         end: Color(0xFF10B981),
+        route: AppRoutes.faceCapture,
+        routeExtra: FaceCaptureConfig.attendanceFront,
       ),
       const _ModuleItem(
         title: 'History',
@@ -148,7 +151,7 @@ class _HomeModuleCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap: () {
           if (item.route != null) {
-            context.push(item.route!);
+            context.push(item.route!, extra: item.routeExtra);
           }
         },
         child: Container(
@@ -225,6 +228,7 @@ class _ModuleItem {
   final Color start;
   final Color end;
   final String? route;
+  final Object? routeExtra;
 
   const _ModuleItem({
     required this.title,
@@ -233,6 +237,7 @@ class _ModuleItem {
     required this.start,
     required this.end,
     this.route,
+    this.routeExtra,
   });
 }
 

@@ -41,6 +41,7 @@ dependencies:
   lottie: ^3.3.2
   device_info_plus: ^12.4.0
   image_picker: ^1.2.1
+  camera: ^0.12.0+1
 
 dev_dependencies:
   flutter_test:

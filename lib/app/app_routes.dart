@@ -6,6 +6,8 @@ import 'package:file_picker/file_picker.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup_screen.dart';
+import '../features/face_detection/presentation/screens/face_capture_screen.dart';
+import '../features/face_detection/presentation/model/face_capture_config.dart';
 import '../features/module/employee_module/presentation/screens/register_employee_screen.dart';
 import '../features/profile_section/presentation/screens/edit_admin_pin_screen.dart';
 import '../features/profile_section/presentation/screens/edit_email_password_screen.dart';
@@ -82,6 +84,16 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.registerEmployee,
           builder: (context, state) => const RegisterEmployeeScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.faceCapture,
+          builder: (context, state) {
+            final extra = state.extra;
+            final config = extra is FaceCaptureConfig
+                ? extra
+                : const FaceCaptureConfig.allProfiles();
+            return FaceCaptureScreen(config: config);
+          },
         ),
         GoRoute(
           path: AppRoutes.employeeImagePreview,

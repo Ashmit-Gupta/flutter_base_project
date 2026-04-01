@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import '../../app/routes.dart';
 import '../../app/theme/app_theme_extension.dart';
 import '../../features/shared/file_controller.dart';
+import '../../features/face_detection/presentation/model/face_capture_config.dart';
+import '../../features/face_detection/presentation/controller/face_capture_controller.dart';
 import '../../features/shared/models/app_file_model.dart';
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
@@ -23,15 +25,18 @@ class FilePickerWidget extends ConsumerWidget {
     this.title = 'Add Attachment',
     this.fileTypesHint = 'Photos from gallery or camera',
     required this.maxFiles,
+    this.profileKey,
   });
 
   final String title;
   final String fileTypesHint;
   final int maxFiles;
+  final String? profileKey;
 
 
   Future<void> _showMediaPickerSheet(BuildContext context, WidgetRef ref) async {
     final fileController = ref.read(fileControllerProvider.notifier);
+    final logger = ref.read(appLoggerProvider);
 
     final selectedAction = await showModalBottomSheet<_MediaPickerAction>(
       context: context,
@@ -129,16 +134,71 @@ class FilePickerWidget extends ConsumerWidget {
       //   );
       //   break;
       case _MediaPickerAction.gallery:
-        message = await fileController.pickFromGallery(maxFiles: maxFiles);
+        if (profileKey != null) {
+          logger.info('[FilePickerWidget] gallery-open profile=$profileKey');
+          message = await fileController.pickFromGalleryForProfile(
+            profileKey: profileKey!,
+          );
+        } else {
+          message = await fileController.pickFromGallery(maxFiles: maxFiles);
+        }
         break;
       case _MediaPickerAction.camera:
-        message = await fileController.pickFromCamera(maxFiles: maxFiles);
+        if (profileKey != null) {
+          logger.info('[FilePickerWidget] face-capture-open profile=$profileKey');
+          final step = switch (profileKey!) {
+            'left_profile' => FaceCaptureStep.left,
+            'right_profile' => FaceCaptureStep.right,
+            _ => FaceCaptureStep.front,
+          };
+          final capturedMap = await context.push<Map<String, String>>(
+            AppRoutes.faceCapture,
+            extra: FaceCaptureConfig.single(step),
+          );
+          if (capturedMap != null && capturedMap.isNotEmpty) {
+            logger.info(
+              '[FilePickerWidget] face-capture-success profile=$profileKey keys=${capturedMap.keys.join(",")}',
+            );
+            capturedMap.forEach((key, path) {
+              fileController.upsertProfilePhoto(
+                profileKey: key,
+                photoPath: path,
+              );
+            });
+            message = 'Photo captured successfully';
+          } else {
+            logger.info(
+              '[FilePickerWidget] face-capture-cancelled profile=$profileKey',
+            );
+            fileController.removeProfilePhoto(profileKey!);
+            message = null;
+          }
+        } else {
+          final capturedMap =
+              await context.push<Map<String, String>>(
+            AppRoutes.faceCapture,
+            extra: const FaceCaptureConfig.allProfiles(),
+          );
+          if (capturedMap != null && capturedMap.isNotEmpty) {
+            message = fileController.addCapturedPhotoPaths(
+              photoPathByProfile: capturedMap,
+              maxFiles: maxFiles,
+            );
+          } else {
+            message = null;
+          }
+        }
         break;
       // --- Disabled: camera video — images only.
       // case _MediaPickerAction.video:
       //   message = await fileController.pickVideoFromCamera(maxFiles: maxFiles);
       //   break;
       case null:
+        if (profileKey != null) {
+          logger.info(
+            '[FilePickerWidget] picker-sheet-dismissed profile=$profileKey',
+          );
+        }
         message = null;
         break;
     }
@@ -271,7 +331,15 @@ class FilePickerWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.theme.colors;
     final accent = colors.primary;
-    final files = ref.watch(fileControllerProvider);
+    final files = profileKey == null
+        ? ref.watch(fileControllerProvider)
+        : ref.watch(
+            fileControllerProvider.select(
+              (all) => all
+                  .where((f) => f.name.startsWith('${profileKey!}_'))
+                  .toList(growable: false),
+            ),
+          );
     final fileController = ref.read(fileControllerProvider.notifier);
 
     return Container(
@@ -354,7 +422,16 @@ class FilePickerWidget extends ConsumerWidget {
                       context,
                       files[index],
                       index,
-                      fileController.removeFile,
+                      (idx) {
+                        if (profileKey != null) {
+                          ref.read(appLoggerProvider).info(
+                                '[FilePickerWidget] profile-remove-tap profile=$profileKey',
+                              );
+                          fileController.removeProfilePhoto(profileKey!);
+                        } else {
+                          fileController.removeFile(idx);
+                        }
+                      },
                     ),
               ],
             ),

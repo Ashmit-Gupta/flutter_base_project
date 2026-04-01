@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../shared/file_controller.dart';
-import '../../../../shared/models/app_file_model.dart';
-import '../../data/model/get_all_employee_model.dart';
-import '../../data/model/register_employee_face_detection_images_model.dart';
-import '../../di/employee_di.dart';
+
+import '../../../../features/module/employee_module/data/model/get_all_employee_model.dart';
+import '../../../../features/module/employee_module/data/model/register_employee_face_detection_images_model.dart';
+import '../../../../features/module/employee_module/di/employee_di.dart';
+import '../../../../features/shared/file_controller.dart';
+import '../../../../features/shared/models/app_file_model.dart';
 
 final registerEmployeeViewModelProvider = NotifierProvider.autoDispose<
     RegisterEmployeeViewModel, RegisterEmployeeState>(
@@ -13,7 +14,6 @@ final registerEmployeeViewModelProvider = NotifierProvider.autoDispose<
 class RegisterEmployeeState {
   const RegisterEmployeeState({
     this.isLoadingEmployees = false,
-    this.isSubmitting = false,
     this.employees = const <GetAllEmployeeUserModel>[],
     this.selectedEmployeeName,
     this.selectedEmployeeCode,
@@ -21,7 +21,6 @@ class RegisterEmployeeState {
   });
 
   final bool isLoadingEmployees;
-  final bool isSubmitting;
   final List<GetAllEmployeeUserModel> employees;
   final String? selectedEmployeeName;
   final String? selectedEmployeeCode;
@@ -29,7 +28,6 @@ class RegisterEmployeeState {
 
   RegisterEmployeeState copyWith({
     bool? isLoadingEmployees,
-    bool? isSubmitting,
     List<GetAllEmployeeUserModel>? employees,
     String? selectedEmployeeName,
     String? selectedEmployeeCode,
@@ -37,7 +35,6 @@ class RegisterEmployeeState {
   }) {
     return RegisterEmployeeState(
       isLoadingEmployees: isLoadingEmployees ?? this.isLoadingEmployees,
-      isSubmitting: isSubmitting ?? this.isSubmitting,
       employees: employees ?? this.employees,
       selectedEmployeeName: selectedEmployeeName ?? this.selectedEmployeeName,
       selectedEmployeeCode: selectedEmployeeCode ?? this.selectedEmployeeCode,
@@ -129,12 +126,6 @@ class RegisterEmployeeViewModel extends Notifier<RegisterEmployeeState> {
   Future<RegisterEmployeeActionResult> submit({
     required bool isFormValid,
   }) async {
-    if (state.isSubmitting) {
-      return const RegisterEmployeeActionResult(
-        message: 'Submission in progress.',
-        isError: true,
-      );
-    }
     if (!isFormValid) {
       return Future.value(const RegisterEmployeeActionResult(
         message: 'Please fill required fields.',
@@ -167,26 +158,21 @@ class RegisterEmployeeViewModel extends Notifier<RegisterEmployeeState> {
       rightProfile: right,
     );
 
-    state = state.copyWith(isSubmitting: true, errorMessage: null);
-    try {
-      final result = await ref
-          .read(employeeRepoProvider)
-          .registerEmployee(employeeCode: employeeCode, images: images)
-          .run();
+    final result = await ref
+        .read(employeeRepoProvider)
+        .registerEmployee(employeeCode: employeeCode, images: images)
+        .run();
 
-      return result.match(
-        (failure) => RegisterEmployeeActionResult(
-          message: failure.message,
-          isError: true,
-        ),
-        (_) => const RegisterEmployeeActionResult(
-          message: 'Employee registration submitted',
-          isError: false,
-        ),
-      );
-    } finally {
-      state = state.copyWith(isSubmitting: false);
-    }
+    return result.match(
+      (failure) => RegisterEmployeeActionResult(
+        message: failure.message,
+        isError: true,
+      ),
+      (_) => const RegisterEmployeeActionResult(
+        message: 'Employee registration submitted',
+        isError: false,
+      ),
+    );
   }
 
   AppFileModel? _firstProfileFile(
