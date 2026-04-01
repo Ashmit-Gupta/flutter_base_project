@@ -5,6 +5,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'app_routes.dart';
 import 'observers/app_lifecycle_observer.dart';
+import '../core/di/core_providers.dart';
+import '../features/auth/presentation/providers/auth_session_provider.dart';
 import 'theme/theme_provider.dart';
 import 'theme/light_theme_builder.dart';
 
@@ -16,12 +18,19 @@ class App extends ConsumerStatefulWidget {
 }
 
 class _AppState extends ConsumerState<App> {
-  final _lifecycleObserver = AppLifecycleObserver();
+  late final AppLifecycleObserver _lifecycleObserver;
+  late final GoRouter _router;
 
   @override
   void initState() {
     super.initState();
+    final logger = ref.read(appLoggerProvider);
+    _lifecycleObserver = AppLifecycleObserver(logger);
     _lifecycleObserver.register();
+    _router = AppRouter.createRouter(
+      logger,
+      () => ref.read(authSessionProvider),
+    );
   }
 
   @override
@@ -32,13 +41,11 @@ class _AppState extends ConsumerState<App> {
 
   @override
   Widget build(BuildContext context) {
-    final GoRouter router = AppRouter.createRouter();
-
     final themeState = ref.watch(themeProvider);
     final themeMode = ref.watch(materialThemeModeProvider);
 
     return MaterialApp.router(
-      routerConfig: router,
+      routerConfig: _router,
       themeMode: themeMode,
       theme: buildLightTheme(
         fontFamily: themeState.fontFamily,

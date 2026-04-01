@@ -28,6 +28,10 @@ class AppTextField extends StatelessWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.onTapOutside,
+    this.onTap,
+    this.showCursor,
+    this.enableInteractiveSelection = true,
+    this.fillColor,
   });
 
   /// Controllers (owned by Hooks / UI layer)
@@ -54,6 +58,7 @@ class AppTextField extends StatelessWidget {
   final ValueChanged<String>? onFieldSubmitted;
   final VoidCallback? onEditingComplete;
   final TapRegionCallback? onTapOutside;
+  final VoidCallback? onTap;
 
   /// Constraints
   final int? maxLength;
@@ -65,10 +70,13 @@ class AppTextField extends StatelessWidget {
   final bool readOnly;
   final bool enableSuggestions;
   final bool autocorrect;
+  final bool? showCursor;
+  final bool enableInteractiveSelection;
 
   /// UI
   final Widget? prefixIcon;
   final Widget? suffixIcon;
+  final Color? fillColor;
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +90,8 @@ class AppTextField extends StatelessWidget {
         hintText: hint,
         prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
+        fillColor: fillColor,
+        filled: fillColor != null,
       ),
       controller: controller,
       focusNode: focusNode,
@@ -93,6 +103,7 @@ class AppTextField extends StatelessWidget {
       onFieldSubmitted: onFieldSubmitted,
       onEditingComplete: onEditingComplete,
       onTapOutside: onTapOutside,
+      onTap: onTap,
       autofillHints: autofillHints,
       inputFormatters: inputFormatters,
       maxLength: maxLength,
@@ -102,6 +113,8 @@ class AppTextField extends StatelessWidget {
       readOnly: readOnly,
       enableSuggestions: enableSuggestions,
       autocorrect: autocorrect,
+      showCursor: showCursor,
+      enableInteractiveSelection: enableInteractiveSelection,
       textCapitalization: textCapitalization,
     );
   }

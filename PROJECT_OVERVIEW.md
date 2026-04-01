@@ -60,20 +60,16 @@ Documentation that defines this:
 
 **Gap:** The `/home` route has no `builder`, so navigating to `/home` will not show a screen. `/login` currently shows `HomePage`.
 
-### 3.3 Dependency Injection — GetIt
+### 3.3 Dependency Injection — Riverpod Providers
 
-- **Package:** `get_it`
-- **Usage:** `lib/core/di/di.dart` defines a global `GetIt getIt` and `setupDI(AppConfig config)` which:
-  - Registers `AppConfig` as singleton.
-  - Creates and registers `Dio` with base URL and timeouts from config; optionally adds logging interceptor.
-  - Registers `AppLogger` singleton.
-  - Leaves placeholders for API/repositories.
-- **Current gap:** `main.dart` does **not** call `setupDI(appConfig)` (it’s commented out). So at runtime, `getIt` is never populated. Any code that uses `getIt<AppLogger>()` or `getIt<Dio>()` (e.g. `AppLifecycleObserver`, `AppRouteObserver`, `registerGlobalErrorObserver`) will throw when used until `setupDI` is invoked in `main()` (and ideally before `runApp`).
+- **Packages:** `flutter_riverpod` / `hooks_riverpod`
+- **Usage:** `lib/core/di/core_providers.dart` defines providers for `AppConfig`, `AppLogger`, `Dio`, `SharedPreferences`, secure storage, and shared infra services.
+- **Bootstrap:** `main.dart` overrides bootstrap-time dependencies (`AppConfig` and `SharedPreferences`) in `ProviderScope`.
 
 ### 3.4 Networking — Dio
 
 - **Package:** `dio`
-- **Usage:** Configured inside `setupDI()` in `lib/core/di/di.dart` (base URL, timeouts, optional logging). Not used elsewhere yet; intended as the HTTP client for future API/repositories.
+- **Usage:** Configured in `DioClient` and exposed through Riverpod providers in `lib/core/di/core_providers.dart`.
 
 ### 3.5 Environment & Config — flutter_dotenv
 
@@ -124,10 +120,9 @@ Documentation that defines this:
 2. Resolve env file from `ENV_FILE` (default `env/dev.env`); assert not empty; in release, forbid dev env.
 3. `await dotenv.load(fileName: envFile)`.
 4. `AppConfig config = AppConfigFactory.fromDotEnv()`.
-5. **Commented out:** `await bootstrap(appConfig);` and `runApp(App(config: appConfig));`.
-6. **Current:** `runApp(App())` — so `AppConfig` is loaded but not passed into `App` and DI is not run.
+5. `runApp(ProviderScope(..., child: App()))` with bootstrap overrides for config and storage.
 
-**Suggested next steps:** Call `await setupDI(appConfig);` and wrap app in `ProviderScope`: e.g. `runApp(ProviderScope(child: App()));`. Optionally pass `config` into `App` if you need it in the widget tree.
+**Current approach:** DI is provider-driven via Riverpod; `AppConfig` and storage dependencies are overridden in `ProviderScope` at bootstrap.
 
 ---
 
@@ -147,13 +142,13 @@ Documentation that defines this:
 - **routes.dart** — Route path constants.
 - **app_routes.dart** — GoRouter setup and route definitions.
 - **theme/** — ThemeState, ThemeNotifier, providers, light/dark builders, colors, text styles, `AppTheme` extension.
-- **observers/** — `AppLifecycleObserver` (logs lifecycle), `AppRouteObserver` (logs route push/pop/replace), `error_observer` (FlutterError hook; uses GetIt for logger).
+- **observers/** — `AppLifecycleObserver` (logs lifecycle), `AppRouteObserver` (logs route push/pop/replace), `error_observer` (FlutterError hook).
 
 ---
 
 ## 6. Core Layer
 
-- **core/di/di.dart** — GetIt setup (`setupDI`); registers AppConfig, Dio, AppLogger.
+- **core/di/core_providers.dart** — Riverpod providers for AppConfig, Dio, AppLogger, storage services, and shared infra.
 - **core/logging/app_logger.dart** — `AppLogger` with levels (debug, info, warning, error); respects `enableLogging` from config.
 - **core/constants/app_constants.dart** — Placeholder (empty); for shared constants.
 
@@ -180,7 +175,7 @@ Core must stay feature-agnostic and not depend on app or features.
 | File | Content |
 |------|--------|
 | **README.md** | Short project intro and Flutter getting-started links. |
-| **docs/project_setup.md** | Short note: “feature based mvvm”, “getx for di” (actual DI in project is GetIt). |
+| **docs/project_setup.md** | Short note: “feature based mvvm”, “getx for di” (actual DI in project is Riverpod providers). |
 | **docs/FLUTTER_HOOKS_USAGE_GUIDE.md** | When/how to use Flutter Hooks and Riverpod hooks; rules (e.g. only in HookWidget/HookConsumerWidget, top-level only); decision tree and examples. |
 | **docs/HOOKS_AND_STATE_RULE.md** | Project rules: hooks only in presentation/shared widgets; only for UI (controllers, toggles); never for API/repo/ViewModel; Riverpod for state. |
 | **lib/app/README.md** | App layer as composition root; orchestration only; no business logic or data; dependency flow (app knows features, not vice versa). |
@@ -191,14 +186,12 @@ Core must stay feature-agnostic and not depend on app or features.
 
 ## 10. Gaps & Inconsistencies to Fix
 
-1. **ProviderScope:** Wrap root in `ProviderScope(child: App())` so Riverpod works.
-2. **DI not run:** Uncomment and call `setupDI(appConfig)` in `main.dart` so observers and any future code using `getIt` work.
-3. **Home route:** `/home` has no `builder`; either add a home screen or point `initialLocation` to a route that has a builder (e.g. `/login` which shows `HomePage`).
-4. **App and config:** Consider passing `AppConfig` into `App` (or a provider) if the UI or theme needs env/config.
-5. **docs/project_setup.md** mentions GetX for DI; the project actually uses GetIt. Updating the doc avoids confusion.
+1. **Home route:** keep route coverage aligned with actual screen modules and role-specific flows.
+2. **Config visibility:** ensure all config-dependent services read from Riverpod providers only.
+3. **Docs alignment:** keep setup docs aligned with Riverpod DI conventions.
 
 ---
 
 ## 11. One-Sentence Summary
 
-**basic_project_setup** is a Flutter starter with feature-based structure, Riverpod + GoRouter + GetIt + env-based config and theming, and strict rules for app/core/features and for hooks; it is intended to be copied and extended with real features, after wiring up ProviderScope and DI in `main.dart` and completing the home route.
+**basic_project_setup** is a Flutter starter with feature-based structure, Riverpod + GoRouter + env-based config and theming, and strict rules for app/core/features and for hooks; it is intended to be copied and extended with real features.

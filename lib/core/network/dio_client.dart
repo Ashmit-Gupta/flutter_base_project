@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../app/app_config.dart';
 import '../logging/app_logger.dart';
@@ -16,6 +15,7 @@ class DioClient {
   factory DioClient(
       AppConfig config,
       AppLogger logger,
+      Future<String?> Function() readToken,
       ) {
     final dio = Dio(
       BaseOptions(
@@ -31,7 +31,7 @@ class DioClient {
     );
 
     dio.interceptors.addAll([
-      DioAppInterceptor(logger),
+      DioAppInterceptor(logger, readToken: readToken),
     ]);
 
     // Dev-only: allow self-signed / invalid certificates (common on local envs).

@@ -4,11 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'app/app_config.dart';
-import 'core/di/di.dart';
-import 'core/di/register_features_di.dart';
+import 'core/di/core_providers.dart';
 import 'core/error/config_exception.dart';
 import 'core/logging/bootstrap_logger.dart';
 
@@ -70,11 +70,17 @@ Future<void> _bootstrap() async {
     await dotenv.load(fileName: envFile);
 
     final appConfig = AppConfigFactory.fromDotEnv();
+    final prefs = await SharedPreferences.getInstance();
 
-    await setupDI(appConfig);
-    registerFeatures();
-
-    runApp(const ProviderScope(child: App()));
+    runApp(
+      ProviderScope(
+        overrides: [
+          appConfigProvider.overrideWithValue(appConfig),
+          sharedPreferencesProvider.overrideWith((ref) => prefs),
+        ],
+        child: const App(),
+      ),
+    );
   } on BootstrapException  catch (e, st) {
     _handleFatalBootstrapError(e, st);
   } catch (e, st) {

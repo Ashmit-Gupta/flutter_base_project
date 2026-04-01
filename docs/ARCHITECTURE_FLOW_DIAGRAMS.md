@@ -10,7 +10,7 @@ This doc is a **single reference** for the architectural flow used in this repo:
 flowchart TB
   A[main.dart] --> B[dotenv.load(envFile)]
   B --> C[AppConfigFactory.fromDotEnv()]
-  C --> D[setupDI(appConfig) via GetIt]
+  C --> D[ProviderScope overrides core providers]
   D --> E[runApp(ProviderScope(child: App()))]
 
   E --> F[App widget]
@@ -162,24 +162,24 @@ Key files:
 
 ---
 
-## 7) DI + Networking flow (GetIt + Dio + interceptors)
+## 7) DI + Networking flow (Riverpod + Dio + interceptors)
 
 ```mermaid
 flowchart TB
-  A[main.dart _bootstrap()] --> B[setupDI(appConfig)]
-  B --> C[GetIt registers AppConfig]
-  B --> D[GetIt registers AppLogger]
+  A[main.dart _bootstrap()] --> B[ProviderScope overrides appConfig/sharedPrefs]
+  B --> C[Riverpod provides AppConfig]
+  B --> D[Riverpod provides AppLogger]
   B --> E[DioClient creates Dio(BaseOptions)]
   E --> F[DioClient adds DioAppInterceptor]
-  F --> G[GetIt registers singleton Dio]
+  F --> G[Riverpod provides Dio]
 
-  H[Future repos/APIs] --> I[getIt<Dio>()]
+  H[Future repos/APIs] --> I[ref.read(dioProvider)]
   I --> J[DioAppInterceptor.onRequest/onResponse/onError]
   J --> K[Map DioException -> AppException]
 ```
 
 Key files:
-- `lib/core/di/di.dart`
+- `lib/core/di/core_providers.dart`
 - `lib/core/network/dio_client.dart`
 - `lib/core/network/dio_interceptor.dart`
 
