@@ -24,6 +24,7 @@ class HomeScreen extends ConsumerWidget {
         icon: Icons.people_alt_rounded,
         start: Color(0xFF2563EB),
         end: Color(0xFF4F46E5),
+        route: AppRoutes.registerEmployee,
       ),
       const _ModuleItem(
         title: 'Mark Attendance',
@@ -146,7 +147,9 @@ class _HomeModuleCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap: () {
-          // TODO: wire module navigation/actions.
+          if (item.route != null) {
+            context.push(item.route!);
+          }
         },
         child: Container(
           decoration: BoxDecoration(
@@ -221,6 +224,7 @@ class _ModuleItem {
   final IconData icon;
   final Color start;
   final Color end;
+  final String? route;
 
   const _ModuleItem({
     required this.title,
@@ -228,6 +232,7 @@ class _ModuleItem {
     required this.icon,
     required this.start,
     required this.end,
+    this.route,
   });
 }
 

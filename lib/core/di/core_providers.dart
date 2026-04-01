@@ -1,12 +1,16 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app/app_config.dart';
 import '../logging/app_logger.dart';
 import '../network/dio_client.dart';
 import '../security/pin_hasher.dart';
+import '../services/file_picker_service.dart';
+import '../services/permission_service.dart';
 import '../storage/secure_storage_service.dart';
 import '../storage/shared_pref_storage.dart';
 
@@ -37,10 +41,26 @@ final dioClientProvider = Provider<DioClient>((ref) {
   final config = ref.watch(appConfigProvider);
   final logger = ref.watch(appLoggerProvider);
   final storage = ref.watch(appStorageProvider);
-  return DioClient(
-    config,
-    logger,
-    () async => storage.getString(_authTokenKey),
+  return DioClient(config, logger, () async => storage.getString(_authTokenKey));
+});
+
+final permissionServiceProvider = Provider<PermissionService>((ref) {
+  return PermissionServiceImpl();
+});
+
+final mediaServiceProvider = Provider<MediaService>((ref) {
+  return MediaServiceImpl(
+    ImagePicker(),
+    ref.read(appLoggerProvider),
+    ref.read(permissionServiceProvider),
+  );
+});
+
+final fileSelectionServiceProvider =
+Provider<FileSelectionService>((ref) {
+  return FileSelectionServiceImpl(
+    FilePicker.platform,
+    ref.read(appLoggerProvider),
   );
 });
 

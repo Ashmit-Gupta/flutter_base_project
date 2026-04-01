@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
@@ -10,9 +11,11 @@ import '../features/profile_section/presentation/screens/edit_email_password_scr
 import '../features/profile_section/presentation/screens/edit_password_screen.dart';
 import '../features/profile_section/presentation/screens/profile_screen.dart';
 import '../features/design_system_screen.dart';
+import '../features/shared/screens/image_preview_screen.dart';
 import '../home_screen.dart';
 import '../core/logging/app_logger.dart';
 import '../features/auth/domain/auth_state.dart';
+import '../module/employee_module/presentation/screens/register_employee_screen.dart';
 import 'observers/route_observer.dart';
 import 'routes.dart';
 import '../features/splash/presentation/screens/splash_screen.dart';
@@ -75,6 +78,20 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.home,
           builder: (context, state) => const HomeScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.registerEmployee,
+          builder: (context, state) => const RegisterEmployeeScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.employeeImagePreview,
+          builder: (context, state) {
+            final file = state.extra;
+            if (file is! PlatformFile) {
+              return const _ErrorScreen(error: 'Missing preview file');
+            }
+            return ImagePreviewScreen(file: file);
+          },
         ),
         GoRoute(
           path: AppRoutes.profile,
