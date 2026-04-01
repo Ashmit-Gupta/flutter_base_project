@@ -56,6 +56,7 @@ class ReusableListBottomSheet<T> extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isMounted = useIsMounted();
     final searchController = useTextEditingController();
     final paginationController = useScrollController();
 
@@ -78,7 +79,7 @@ class ReusableListBottomSheet<T> extends HookConsumerWidget {
     final isPaginated = onFetchPage != null;
     final canRemoteSearch = onSearchPagePaged != null;
 
-    void closeSheet() => Navigator.of(context).pop();
+    void closeSheet([String? result]) => Navigator.of(context).pop(result);
 
     bool isAllLabel(dynamic key, T value) {
       final label = labelBuilder?.call(key, value) ?? value.toString();
@@ -124,6 +125,7 @@ class ReusableListBottomSheet<T> extends HookConsumerWidget {
       isFetching.value = true;
       try {
         final result = await onFetchPage!(page, pageSize);
+        if (!isMounted()) return;
         final nextItems = List<T>.from(paginatedItems.value);
         if (page == 1) {
           nextItems
@@ -151,6 +153,7 @@ class ReusableListBottomSheet<T> extends HookConsumerWidget {
           selected.value = nextSelected;
         }
       } finally {
+        if (!isMounted()) return;
         isFetching.value = false;
       }
     }
@@ -175,9 +178,11 @@ class ReusableListBottomSheet<T> extends HookConsumerWidget {
 
       try {
         final result = await onSearchPagePaged!(q, 1, pageSize);
+        if (!isMounted()) return;
         remoteSearchItems.value = List<T>.from(result);
         searchHasMore.value = result.length == pageSize;
       } finally {
+        if (!isMounted()) return;
         isRemoteSearching.value = false;
       }
     }
@@ -193,10 +198,12 @@ class ReusableListBottomSheet<T> extends HookConsumerWidget {
       final nextPage = searchPage.value + 1;
       try {
         final result = await onSearchPagePaged!(q, nextPage, pageSize);
+        if (!isMounted()) return;
         remoteSearchItems.value = [...remoteSearchItems.value, ...result];
         searchPage.value = nextPage;
         searchHasMore.value = result.length == pageSize;
       } finally {
+        if (!isMounted()) return;
         isRemoteFetchingMore.value = false;
       }
     }
@@ -442,7 +449,9 @@ class ReusableListBottomSheet<T> extends HookConsumerWidget {
                                 }
                               } else {
                                 onTap(index, value);
-                                closeSheet();
+                                if (context.mounted) {
+                                  closeSheet(displayText);
+                                }
                               }
                             },
                           );
@@ -522,7 +531,9 @@ class ReusableListBottomSheet<T> extends HookConsumerWidget {
                               }
                             } else {
                               onTap(key, value);
-                              closeSheet();
+                              if (context.mounted) {
+                                closeSheet(displayText);
+                              }
                             }
                           },
                         );

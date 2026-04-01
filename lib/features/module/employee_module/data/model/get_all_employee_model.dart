@@ -5,29 +5,18 @@ class GetAllEmployeeModel {
     required this.data,
   });
 
-  final GetAllEmployeeDataModel data;
+  final List<GetAllEmployeeUserModel> data;
 
   factory GetAllEmployeeModel.fromJson(dynamic json) {
     final map = json as Map<String, dynamic>;
 
-    final dataMap = requireField<Map<String, dynamic>>(
+    final dataRaw = requireField<List<dynamic>>(
       map,
       'data',
       'data',
     );
 
-    final totalUsers = requireField<int>(
-      dataMap,
-      'total_users',
-      'data.total_users',
-    );
-
-    final usersRaw = requireField<List<dynamic>>(
-      dataMap,
-      'users',
-      'data.users',
-    );
-    final users = usersRaw
+    final users = dataRaw
         .asMap()
         .entries
         .map((entry) {
@@ -37,38 +26,30 @@ class GetAllEmployeeModel {
         .toList(growable: false);
 
     return GetAllEmployeeModel(
-      data: GetAllEmployeeDataModel(
-        totalUsers: totalUsers,
-        users: users,
-      ),
+      data: users,
     );
   }
 }
 
-class GetAllEmployeeDataModel {
-  const GetAllEmployeeDataModel({
-    required this.totalUsers,
-    required this.users,
-  });
-
-  final int totalUsers;
-  final List<GetAllEmployeeUserModel> users;
-}
-
 class GetAllEmployeeUserModel {
   const GetAllEmployeeUserModel({
+    required this.employeeId,
     required this.empCode,
     required this.name,
   });
 
+  final int employeeId;
   final String empCode;
   final String name;
 
   factory GetAllEmployeeUserModel.fromJson(Map<String, dynamic> json) {
-    final empCode = requireField<String>(json, 'emp_code', 'emp_code');
+    final employeeId = requireField<int>(json, 'employee_id', 'employee_id');
+    final empCode =
+        requireField<String>(json, 'employee_code', 'employee_code');
     final name = requireField<String>(json, 'name', 'name');
 
     return GetAllEmployeeUserModel(
+      employeeId: employeeId,
       empCode: empCode,
       name: name,
     );
