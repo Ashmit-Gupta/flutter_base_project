@@ -1,7 +1,6 @@
 import 'package:fpdart/fpdart.dart';
-
-import '../../../../core/error/error_mapper.dart';
-import '../../../../core/results/result.dart';
+import '../../../../../core/error/error_mapper.dart';
+import '../../../../../core/results/result.dart';
 import '../data_source/employee_data_source.dart';
 import '../model/get_all_employee_model.dart';
 
