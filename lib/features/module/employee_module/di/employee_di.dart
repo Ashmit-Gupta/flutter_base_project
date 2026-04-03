@@ -1,8 +1,9 @@
-import 'package:basic_project_setup/module/employee_module/data/data_source/employee_data_source.dart';
-import 'package:basic_project_setup/module/employee_module/data/repo/employee_repo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/di/core_providers.dart';
+import '../../../../core/di/core_providers.dart';
+import '../data/data_source/employee_data_source.dart';
+import '../data/repo/employee_repo.dart';
+
 
 
 final employeeDataSourceProvider = Provider<EmployeeDataSource>((ref) {

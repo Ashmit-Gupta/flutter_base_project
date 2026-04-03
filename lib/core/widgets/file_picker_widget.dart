@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import '../../app/routes.dart';
 import '../../app/theme/app_theme_extension.dart';
 import '../../features/shared/file_controller.dart';
+import '../../features/face_detection/presentation/model/face_capture_config.dart';
+import '../../features/face_detection/presentation/controller/face_capture_controller.dart';
 import '../../features/shared/models/app_file_model.dart';
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
@@ -18,20 +20,16 @@ import '../feedback/app_snackbar.dart';
 int? _lastLoggedFilePickerCount;
 
 class FilePickerWidget extends ConsumerWidget {
-  const FilePickerWidget({
-    super.key,
-    this.title = 'Add Attachment',
-    this.fileTypesHint = 'Photos from gallery or camera',
-    required this.maxFiles,
-  });
+  const FilePickerWidget({super.key, this.title = 'Add Attachment', this.fileTypesHint = 'Photos from gallery or camera', required this.maxFiles, this.profileKey});
 
   final String title;
   final String fileTypesHint;
   final int maxFiles;
-
+  final String? profileKey;
 
   Future<void> _showMediaPickerSheet(BuildContext context, WidgetRef ref) async {
     final fileController = ref.read(fileControllerProvider.notifier);
+    final logger = ref.read(appLoggerProvider);
 
     final selectedAction = await showModalBottomSheet<_MediaPickerAction>(
       context: context,
@@ -43,10 +41,7 @@ class FilePickerWidget extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: sheetColors.surface,
-                borderRadius: BorderRadius.circular(20),
-              ),
+              decoration: BoxDecoration(color: sheetColors.surface, borderRadius: BorderRadius.circular(20)),
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
@@ -54,21 +49,14 @@ class FilePickerWidget extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Center(
-                      child: Text(
-                        'Add photos',
-                        style: sheetContext.text.title().copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
+                      child: Text('Add photos', style: sheetContext.text.title().copyWith(fontWeight: FontWeight.w700)),
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Center(
                       child: Text(
                         'Choose from gallery or take a photo (images only)',
                         textAlign: TextAlign.center,
-                        style: sheetContext.text.body().copyWith(
-                              color: sheetColors.textSecondary,
-                            ),
+                        style: sheetContext.text.body().copyWith(color: sheetColors.textSecondary),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -129,16 +117,50 @@ class FilePickerWidget extends ConsumerWidget {
       //   );
       //   break;
       case _MediaPickerAction.gallery:
-        message = await fileController.pickFromGallery(maxFiles: maxFiles);
+        if (profileKey != null) {
+          logger.info('[FilePickerWidget] gallery-open profile=$profileKey');
+          message = await fileController.pickFromGalleryForProfile(profileKey: profileKey!);
+        } else {
+          message = await fileController.pickFromGallery(maxFiles: maxFiles);
+        }
         break;
       case _MediaPickerAction.camera:
-        message = await fileController.pickFromCamera(maxFiles: maxFiles);
+        if (profileKey != null) {
+          logger.info('[FilePickerWidget] face-capture-open profile=$profileKey');
+          final step = switch (profileKey!) {
+            'left_profile' => FaceCaptureStep.left,
+            'right_profile' => FaceCaptureStep.right,
+            _ => FaceCaptureStep.front,
+          };
+          final capturedMap = await context.push<Map<String, String>>(AppRoutes.faceCapture, extra: FaceCaptureConfig.single(step));
+          if (capturedMap != null && capturedMap.isNotEmpty) {
+            logger.info('[FilePickerWidget] face-capture-success profile=$profileKey keys=${capturedMap.keys.join(",")}');
+            capturedMap.forEach((key, path) {
+              fileController.upsertProfilePhoto(profileKey: key, photoPath: path);
+            });
+            message = 'Photo captured successfully';
+          } else {
+            logger.info('[FilePickerWidget] face-capture-cancelled profile=$profileKey');
+            fileController.removeProfilePhoto(profileKey!);
+            message = null;
+          }
+        } else {
+          final capturedMap = await context.push<Map<String, String>>(AppRoutes.faceCapture, extra: const FaceCaptureConfig.allProfiles());
+          if (capturedMap != null && capturedMap.isNotEmpty) {
+            message = fileController.addCapturedPhotoPaths(photoPathByProfile: capturedMap, maxFiles: maxFiles);
+          } else {
+            message = null;
+          }
+        }
         break;
       // --- Disabled: camera video — images only.
       // case _MediaPickerAction.video:
       //   message = await fileController.pickVideoFromCamera(maxFiles: maxFiles);
       //   break;
       case null:
+        if (profileKey != null) {
+          logger.info('[FilePickerWidget] picker-sheet-dismissed profile=$profileKey');
+        }
         message = null;
         break;
     }
@@ -150,25 +172,15 @@ class FilePickerWidget extends ConsumerWidget {
 
   // ================= IMAGE THUMBNAIL =================
 
-  Widget _buildImageThumbnail(
-    BuildContext context,
-    AppFileModel file,
-    int index,
-    void Function(int) onRemoveFile,
-  ) {
+  Widget _buildImageThumbnail(BuildContext context, AppFileModel file, int index, void Function(int) onRemoveFile) {
     final colors = context.theme.colors;
 
     Widget imageChild;
 
     if (file.path.isNotEmpty && File(file.path).existsSync()) {
-      imageChild = Image.file(
-        File(file.path),
-        fit: BoxFit.cover,
-      );
+      imageChild = Image.file(File(file.path), fit: BoxFit.cover);
     } else {
-      imageChild = Center(
-        child: Icon(Icons.broken_image_rounded, color: colors.textSecondary),
-      );
+      imageChild = Center(child: Icon(Icons.broken_image_rounded, color: colors.textSecondary));
     }
 
     return Stack(
@@ -183,21 +195,13 @@ class FilePickerWidget extends ConsumerWidget {
               }
               context.push(
                 AppRoutes.employeeImagePreview,
-                extra: PlatformFile(
-                  name: '',
-                  path: file.path,
-                  size: file.size,
-                ),
+                extra: PlatformFile(name: '', path: file.path, size: file.size),
               );
             },
             borderRadius: BorderRadius.circular(AppRadius.sm),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.sm),
-              child: SizedBox(
-                width: 88,
-                height: 88,
-                child: imageChild,
-              ),
+              child: SizedBox(width: 88, height: 88, child: imageChild),
             ),
           ),
         ),
@@ -205,19 +209,10 @@ class FilePickerWidget extends ConsumerWidget {
           top: 4,
           left: 4,
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
+            decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(AppRadius.sm)),
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xs,
-                vertical: 2,
-              ),
-              child: Text(
-                '${index + 1}',
-                style: context.text.caption().copyWith(color: Colors.white),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
+              child: Text('${index + 1}', style: context.text.caption().copyWith(color: Colors.white)),
             ),
           ),
         ),
@@ -232,11 +227,7 @@ class FilePickerWidget extends ConsumerWidget {
               onTap: () => onRemoveFile(index),
               child: Padding(
                 padding: const EdgeInsets.all(4),
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 16,
-                  color: colors.textPrimary,
-                ),
+                child: Icon(Icons.close_rounded, size: 16, color: colors.textPrimary),
               ),
             ),
           ),
@@ -257,9 +248,7 @@ class FilePickerWidget extends ConsumerWidget {
     final count = files.length;
     if (_lastLoggedFilePickerCount != count) {
       _lastLoggedFilePickerCount = count;
-      ref.read(appLoggerProvider).info(
-            '[FilePickerWidget] files selected: $count',
-          );
+      ref.read(appLoggerProvider).info('[FilePickerWidget] files selected: $count');
     }
     if (files.isEmpty) return 'No files selected.';
     // if (files.length == 1) return '1 file selected';
@@ -271,7 +260,7 @@ class FilePickerWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.theme.colors;
     final accent = colors.primary;
-    final files = ref.watch(fileControllerProvider);
+    final files = profileKey == null ? ref.watch(fileControllerProvider) : ref.watch(fileControllerProvider.select((all) => all.where((f) => f.name.startsWith('${profileKey!}_')).toList(growable: false)));
     final fileController = ref.read(fileControllerProvider.notifier);
 
     return Container(
@@ -284,10 +273,7 @@ class FilePickerWidget extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: context.text.title().copyWith(fontWeight: FontWeight.w700),
-          ),
+          Text(title, style: context.text.title().copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: AppSpacing.md),
           Material(
             type: MaterialType.transparency,
@@ -295,45 +281,26 @@ class FilePickerWidget extends ConsumerWidget {
               borderRadius: BorderRadius.circular(AppRadius.md),
               onTap: () => _showMediaPickerSheet(context, ref),
               child: CustomPaint(
-                painter: _DashedRRectPainter(
-                  color: accent,
-                  borderRadius: AppRadius.md,
-                  dashWidth: 6,
-                  dashGap: 4,
-                ),
+                painter: _DashedRRectPainter(color: accent, borderRadius: AppRadius.md, dashWidth: 6, dashGap: 4),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: AppSpacing.xl,
-                    horizontal: AppSpacing.md,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl, horizontal: AppSpacing.md),
                   child: SizedBox(
                     width: double.infinity,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.cloud_upload_rounded,
-                          size: 40,
-                          color: accent,
-                        ),
+                        Icon(Icons.cloud_upload_rounded, size: 40, color: accent),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           'Click to Upload',
-                          style: context.text.body().copyWith(
-                                color: accent,
-                                fontWeight: FontWeight.w600,
-                                decoration: TextDecoration.underline,
-                                decorationColor: accent,
-                              ),
+                          style: context.text.body().copyWith(color: accent, fontWeight: FontWeight.w600, decoration: TextDecoration.underline, decorationColor: accent),
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
                           fileTypesHint,
                           textAlign: TextAlign.center,
-                          style: context.text.caption().copyWith(
-                                color: colors.textSecondary,
-                              ),
+                          style: context.text.caption().copyWith(color: colors.textSecondary),
                         ),
                       ],
                     ),
@@ -350,12 +317,14 @@ class FilePickerWidget extends ConsumerWidget {
               children: [
                 for (var index = 0; index < files.length; index++)
                   if (_isImage(files[index]))
-                    _buildImageThumbnail(
-                      context,
-                      files[index],
-                      index,
-                      fileController.removeFile,
-                    ),
+                    _buildImageThumbnail(context, files[index], index, (idx) {
+                      if (profileKey != null) {
+                        ref.read(appLoggerProvider).info('[FilePickerWidget] profile-remove-tap profile=$profileKey');
+                        fileController.removeProfilePhoto(profileKey!);
+                      } else {
+                        fileController.removeFile(idx);
+                      }
+                    }),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
@@ -364,11 +333,7 @@ class FilePickerWidget extends ConsumerWidget {
             child: Text(
               _statusLine(files, ref),
               textAlign: TextAlign.center,
-              style: context.text.body().copyWith(
-                    color: files.isEmpty
-                        ? colors.textPrimary
-                        : colors.textSecondary,
-                  ),
+              style: context.text.body().copyWith(color: files.isEmpty ? colors.textPrimary : colors.textSecondary),
             ),
           ),
         ],
@@ -382,12 +347,7 @@ class FilePickerWidget extends ConsumerWidget {
 enum _MediaPickerAction { gallery, camera }
 
 class _MediaActionTile extends StatelessWidget {
-  const _MediaActionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
+  const _MediaActionTile({required this.icon, required this.title, required this.subtitle, required this.onTap});
 
   final IconData icon;
   final String title;
@@ -410,10 +370,7 @@ class _MediaActionTile extends StatelessWidget {
               Container(
                 width: 48,
                 height: 48,
-                decoration: BoxDecoration(
-                  color: colors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(12)),
                 child: Icon(icon, color: colors.primary),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -421,19 +378,9 @@ class _MediaActionTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: context.text.body().copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
+                    Text(title, style: context.text.body().copyWith(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: context.text.caption().copyWith(
-                            color: colors.textSecondary,
-                          ),
-                    ),
+                    Text(subtitle, style: context.text.caption().copyWith(color: colors.textSecondary)),
                   ],
                 ),
               ),
@@ -449,12 +396,7 @@ class _MediaActionTile extends StatelessWidget {
 // ================= DASHED BORDER =================
 
 class _DashedRRectPainter extends CustomPainter {
-  _DashedRRectPainter({
-    required this.color,
-    required this.borderRadius,
-    required this.dashWidth,
-    required this.dashGap,
-  });
+  _DashedRRectPainter({required this.color, required this.borderRadius, required this.dashWidth, required this.dashGap});
 
   final Color color;
   final double borderRadius;
@@ -464,10 +406,7 @@ class _DashedRRectPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Rect.fromLTWH(0.5, 0.5, size.width - 1, size.height - 1);
-    final rrect = RRect.fromRectAndRadius(
-      rect,
-      Radius.circular(borderRadius),
-    );
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(borderRadius));
     final path = Path()..addRRect(rrect);
 
     final paint = Paint()
@@ -487,9 +426,6 @@ class _DashedRRectPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DashedRRectPainter oldDelegate) {
-    return oldDelegate.color != color ||
-        oldDelegate.borderRadius != borderRadius ||
-        oldDelegate.dashWidth != dashWidth ||
-        oldDelegate.dashGap != dashGap;
+    return oldDelegate.color != color || oldDelegate.borderRadius != borderRadius || oldDelegate.dashWidth != dashWidth || oldDelegate.dashGap != dashGap;
   }
 }

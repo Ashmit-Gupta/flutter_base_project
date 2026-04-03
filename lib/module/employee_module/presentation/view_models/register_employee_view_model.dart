@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../features/module/employee_module/data/model/get_all_employee_model.dart';
+import '../../../../features/module/employee_module/data/model/register_employee_face_detection_images_model.dart';
+import '../../../../features/module/employee_module/di/employee_di.dart';
 import '../../../../features/shared/file_controller.dart';
-import '../../data/model/get_all_employee_model.dart';
-import '../../di/employee_di.dart';
+import '../../../../features/shared/models/app_file_model.dart';
 
 final registerEmployeeViewModelProvider = NotifierProvider.autoDispose<
     RegisterEmployeeViewModel, RegisterEmployeeState>(
@@ -75,7 +77,7 @@ class RegisterEmployeeViewModel extends Notifier<RegisterEmployeeState> {
       (GetAllEmployeeModel response) {
         state = state.copyWith(
           isLoadingEmployees: false,
-          employees: response.data.users,
+          employees: response.data,
           errorMessage: null,
         );
       },
@@ -97,7 +99,7 @@ class RegisterEmployeeViewModel extends Notifier<RegisterEmployeeState> {
         return const <GetAllEmployeeUserModel>[];
       },
       (response) {
-        final users = response.data.users;
+        final users = response.data;
         state = state.copyWith(
           employees: users,
           errorMessage: null,
@@ -121,32 +123,64 @@ class RegisterEmployeeViewModel extends Notifier<RegisterEmployeeState> {
     );
   }
 
-  RegisterEmployeeActionResult submit({
+  Future<RegisterEmployeeActionResult> submit({
     required bool isFormValid,
-    required int minUploads,
-    required int maxUploads,
-  }) {
+  }) async {
     if (!isFormValid) {
-      return const RegisterEmployeeActionResult(
+      return Future.value(const RegisterEmployeeActionResult(
         message: 'Please fill required fields.',
         isError: true,
-      );
+      ));
     }
 
-    final fileValidationMessage = ref.read(fileControllerProvider.notifier).validateFileCount(
-          minFiles: minUploads,
-          maxFiles: maxUploads,
-        );
-    if (fileValidationMessage != null) {
-      return RegisterEmployeeActionResult(
-        message: fileValidationMessage,
+    final employeeCode = state.selectedEmployeeCode;
+    if (employeeCode == null || employeeCode.isEmpty) {
+      return Future.value(const RegisterEmployeeActionResult(
+        message: 'Please select an employee.',
         isError: true,
-      );
+      ));
     }
 
-    return const RegisterEmployeeActionResult(
-      message: 'Employee registration submitted',
-      isError: false,
+    final fileController = ref.read(fileControllerProvider.notifier);
+    final left = _firstProfileFile(fileController, 'left_profile');
+    final front = _firstProfileFile(fileController, 'front_profile');
+    final right = _firstProfileFile(fileController, 'right_profile');
+    if (left == null || front == null || right == null) {
+      return Future.value(const RegisterEmployeeActionResult(
+        message: 'Please capture all profiles (left, front, right).',
+        isError: true,
+      ));
+    }
+
+    final images = RegisterEmployeeFaceDetectionImagesModel(
+      leftProfile: left,
+      frontProfile: front,
+      rightProfile: right,
     );
+
+    final result = await ref
+        .read(employeeRepoProvider)
+        .registerEmployee(employeeCode: employeeCode, images: images)
+        .run();
+
+    return result.match(
+      (failure) => RegisterEmployeeActionResult(
+        message: failure.message,
+        isError: true,
+      ),
+      (_) => const RegisterEmployeeActionResult(
+        message: 'Employee registration submitted',
+        isError: false,
+      ),
+    );
+  }
+
+  AppFileModel? _firstProfileFile(
+    FileController controller,
+    String profileKey,
+  ) {
+    final files = controller.filesForProfile(profileKey);
+    if (files.isEmpty) return null;
+    return files.first;
   }
 }

@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 enum AppPermission {
   camera,
   storage,
+  location,
 }
 
 enum PermissionResult {
@@ -43,6 +44,11 @@ class PermissionServiceImpl implements PermissionService {
           return Permission.storage;
         }
         return Permission.photos; // iOS
+
+      case AppPermission.location:
+        // Attendance marking needs foreground GPS; background ("always") is
+        // often denied unless the app is configured for it.
+        return Permission.locationWhenInUse;
     }
   }
 
@@ -69,4 +75,14 @@ class MediaPermissionHandler {
   Future<PermissionResult> ensureStorageAccess() {
     return _permission.request(AppPermission.storage);
   }
+}
+
+class LocationPermissionHandler{
+  final PermissionService _permissionService;
+
+  LocationPermissionHandler(this._permissionService);
+  Future<PermissionResult> ensureAlwaysLocationAccess() {
+    return _permissionService.request(AppPermission.location);
+  }
+
 }

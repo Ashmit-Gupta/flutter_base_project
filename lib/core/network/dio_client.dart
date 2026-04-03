@@ -16,10 +16,13 @@ class DioClient {
       AppConfig config,
       AppLogger logger,
       Future<String?> Function() readToken,
+      String Function() readDeviceId,
+      String Function() readDevicePin,
       ) {
     final dio = Dio(
       BaseOptions(
         baseUrl: config.apiBaseUrl,
+        // baseUrl: "http://192.168.1.35:3000",
         connectTimeout: config.connectTimeout,
         receiveTimeout: config.receiveTimeout,
         sendTimeout: config.sendTimeout,
@@ -31,7 +34,12 @@ class DioClient {
     );
 
     dio.interceptors.addAll([
-      DioAppInterceptor(logger, readToken: readToken),
+      DioAppInterceptor(
+        logger,
+        readToken: readToken,
+        readDeviceId: readDeviceId,
+        readDevicePin: readDevicePin,
+      ),
     ]);
 
     // Dev-only: allow self-signed / invalid certificates (common on local envs).

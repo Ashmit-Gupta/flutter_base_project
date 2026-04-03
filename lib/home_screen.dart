@@ -24,7 +24,7 @@ class HomeScreen extends ConsumerWidget {
         icon: Icons.people_alt_rounded,
         start: Color(0xFF2563EB),
         end: Color(0xFF4F46E5),
-        route: AppRoutes.registerEmployee,
+        route: AppRoutes.employeeList,
       ),
       const _ModuleItem(
         title: 'Mark Attendance',
@@ -32,6 +32,8 @@ class HomeScreen extends ConsumerWidget {
         icon: Icons.fact_check_rounded,
         start: Color(0xFF059669),
         end: Color(0xFF10B981),
+        route: AppRoutes.markAttendance,
+        routeExtra: null,
       ),
       const _ModuleItem(
         title: 'History',
@@ -81,9 +83,7 @@ class HomeScreen extends ConsumerWidget {
       context: context,
       showDragHandle: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppRadius.lg),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       builder: (sheetContext) {
         return SafeArea(
@@ -102,7 +102,9 @@ class HomeScreen extends ConsumerWidget {
                   icon: Icons.settings_suggest_rounded,
                   selected: currentMode == AppThemeMode.system,
                   onTap: () {
-                    ref.read(themeProvider.notifier).setThemeMode(AppThemeMode.system);
+                    ref
+                        .read(themeProvider.notifier)
+                        .setThemeMode(AppThemeMode.system);
                     Navigator.of(sheetContext).pop();
                   },
                 ),
@@ -111,7 +113,9 @@ class HomeScreen extends ConsumerWidget {
                   icon: Icons.light_mode_rounded,
                   selected: currentMode == AppThemeMode.light,
                   onTap: () {
-                    ref.read(themeProvider.notifier).setThemeMode(AppThemeMode.light);
+                    ref
+                        .read(themeProvider.notifier)
+                        .setThemeMode(AppThemeMode.light);
                     Navigator.of(sheetContext).pop();
                   },
                 ),
@@ -120,7 +124,9 @@ class HomeScreen extends ConsumerWidget {
                   icon: Icons.dark_mode_rounded,
                   selected: currentMode == AppThemeMode.dark,
                   onTap: () {
-                    ref.read(themeProvider.notifier).setThemeMode(AppThemeMode.dark);
+                    ref
+                        .read(themeProvider.notifier)
+                        .setThemeMode(AppThemeMode.dark);
                     Navigator.of(sheetContext).pop();
                   },
                 ),
@@ -131,7 +137,6 @@ class HomeScreen extends ConsumerWidget {
       },
     );
   }
-
 }
 
 class _HomeModuleCard extends StatelessWidget {
@@ -148,7 +153,7 @@ class _HomeModuleCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap: () {
           if (item.route != null) {
-            context.push(item.route!);
+            context.push(item.route!, extra: item.routeExtra);
           }
         },
         child: Container(
@@ -177,11 +182,7 @@ class _HomeModuleCard extends StatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                 ),
-                child: Icon(
-                  item.icon,
-                  color: Colors.white,
-                  size: 28,
-                ),
+                child: Icon(item.icon, color: Colors.white, size: 28),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -191,15 +192,15 @@ class _HomeModuleCard extends StatelessWidget {
                     Text(
                       item.title,
                       style: context.text.title().copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       item.subtitle,
                       style: context.text.body().copyWith(
-                            color: context.theme.colors.textSecondary,
-                          ),
+                        color: context.theme.colors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -225,6 +226,7 @@ class _ModuleItem {
   final Color start;
   final Color end;
   final String? route;
+  final Object? routeExtra;
 
   const _ModuleItem({
     required this.title,
@@ -233,6 +235,7 @@ class _ModuleItem {
     required this.start,
     required this.end,
     this.route,
+    this.routeExtra,
   });
 }
 

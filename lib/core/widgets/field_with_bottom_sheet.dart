@@ -15,7 +15,6 @@ class FieldWithBottomSheet extends StatelessWidget {
   final void Function(String value)? onSelected;
   final String? label;
   final String? hint;
-  final double textFieldHeight;
 
   const FieldWithBottomSheet({
     super.key,
@@ -30,7 +29,6 @@ class FieldWithBottomSheet extends StatelessWidget {
     this.onSelected, // 🔹 Allow parent to handle selection
     this.label,
     this.hint,
-    this.textFieldHeight = 48,
   });
 
   @override
@@ -46,51 +44,48 @@ class FieldWithBottomSheet extends StatelessWidget {
         //   style: context.text.body().copyWith(fontWeight: FontWeight.w600),
         // ),
         // const SizedBox(height: 4),
-        SizedBox(
-          height: textFieldHeight,
-          child: AppTextField(
-            fillColor: readOnlyFillColor,
-            focusNode: focusNode,
-            readOnly: isReadOnly,
-            maxLines: 1,
-            showCursor: false,
-            label: label,
-            hint: hint,
-            keyboardType: TextInputType.none,
-            enableInteractiveSelection: false,
-            controller: controller,
-            suffixIcon: showTrailingIcon
-                ? IconButton(
-                    onPressed: trailingFunction,
-                    icon: IconTheme(
-                      data: IconThemeData(color: colors.textSecondary),
-                      child: trailingIcon,
-                    ),
-                  )
-                : null,
-            validator: (v) {
-              if (v == null || v.trim().isEmpty) {
-                return '$title is required';
-              }
-              return null;
-            },
-            onTap: bottomSheet != null
-                ? () async {
-                    final result = await showModalBottomSheet<String>(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => bottomSheet!,
-                    );
-                    if (result != null && result.isNotEmpty) {
-                      controller.text = result;
-                      if (onSelected != null) {
-                        onSelected!(result); // Delegate logic to parent
-                      }
+        AppTextField(
+          fillColor: readOnlyFillColor,
+          focusNode: focusNode,
+          readOnly: isReadOnly,
+          maxLines: 1,
+          showCursor: false,
+          label: label,
+          hint: hint,
+          keyboardType: TextInputType.none,
+          enableInteractiveSelection: false,
+          controller: controller,
+          suffixIcon: showTrailingIcon
+              ? IconButton(
+                  onPressed: trailingFunction,
+                  icon: IconTheme(
+                    data: IconThemeData(color: colors.textSecondary),
+                    child: trailingIcon,
+                  ),
+                )
+              : null,
+          validator: (v) {
+            if (v == null || v.trim().isEmpty) {
+              return '$title is required';
+            }
+            return null;
+          },
+          onTap: bottomSheet != null
+              ? () async {
+                  final result = await showModalBottomSheet<String>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => bottomSheet!,
+                  );
+                  if (result != null && result.isNotEmpty) {
+                    controller.text = result;
+                    if (onSelected != null) {
+                      onSelected!(result); // Delegate logic to parent
                     }
                   }
-                : null,
-          ),
+                }
+              : null,
         ),
       ],
     );
