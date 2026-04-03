@@ -85,6 +85,7 @@ Future<void> _bootstrap() async {
     final prefs = await SharedPreferences.getInstance();
     final appLogger = AppLogger(enableLogging: appConfig.enableLogging);
 
+    //this is for the loggin
     runApp(
       ProviderScope(
         observers: [MetricsProviderObserver(appLogger)],
