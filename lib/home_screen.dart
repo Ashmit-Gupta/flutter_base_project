@@ -28,12 +28,11 @@ class HomeScreen extends ConsumerWidget {
       ),
       const _ModuleItem(
         title: 'Mark Attendance',
-        subtitle: 'Check in or check out in a single tap.',
+        subtitle: 'Coming soon — attendance flow is not wired in this build.',
         icon: Icons.fact_check_rounded,
         start: Color(0xFF059669),
         end: Color(0xFF10B981),
-        route: AppRoutes.markAttendance,
-        routeExtra: null,
+        route: null,
       ),
       const _ModuleItem(
         title: 'History',

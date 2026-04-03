@@ -22,7 +22,7 @@ extension AppThemeX on BuildContext {
       ScreenTypeScope.screenTypeOf(this),
       t.colors.textPrimary,
       t.fontFamily,
-      textScaleFactor: ScreenTypeScope.textScaleFactorOf(this),
+      textScaler: ScreenTypeScope.textScalerOf(this),
     );
   }
 }

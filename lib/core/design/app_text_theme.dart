@@ -22,7 +22,7 @@ TextTheme buildAppTextTheme({
     fontFamily: fontFamily,
     scale: ts.factor,
     maxFontSize: 48,
-    textScaleFactor: 1.0,
+    textScaler: TextScaler.noScaling,
   );
 
   final display = typography.display();

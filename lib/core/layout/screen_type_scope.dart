@@ -2,43 +2,34 @@ import 'package:flutter/widgets.dart';
 
 import 'breakpoints.dart';
 
-/// Provides [ScreenType] and [textScaleFactor] to the subtree.
+/// Provides [ScreenType] and [textScaler] to the subtree.
 ///
 /// Layout layer (e.g. [AdaptiveLayoutBuilder]) sets this so UI never
-/// reads [MediaQuery] directly. Defaults to [ScreenType.mobile] and 1.0
+/// reads [MediaQuery] directly. Defaults to [ScreenType.mobile] and identity scaler
 /// when not found.
 class ScreenTypeScope extends InheritedWidget {
   const ScreenTypeScope({
     super.key,
     required this.screenType,
-    required this.textScaleFactor,
+    required this.textScaler,
     required super.child,
   });
 
   final ScreenType screenType;
-  final double textScaleFactor;
+  final TextScaler textScaler;
 
   static ScreenType screenTypeOf(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<ScreenTypeScope>();
-    assert(() {
-      if (scope == null) {
-        debugPrint(
-          '⚠️ ScreenTypeScope not found. '
-              'Defaulting to ScreenType.mobile.',
-        );
-      }
-      return true;
-    }());
     return scope?.screenType ?? ScreenType.mobile;
   }
 
-  static double textScaleFactorOf(BuildContext context) {
+  static TextScaler textScalerOf(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<ScreenTypeScope>();
-    return scope?.textScaleFactor ?? 1.0;
+    return scope?.textScaler ?? TextScaler.noScaling;
   }
 
   @override
   bool updateShouldNotify(ScreenTypeScope oldWidget) =>
       screenType != oldWidget.screenType ||
-      textScaleFactor != oldWidget.textScaleFactor;
+      textScaler != oldWidget.textScaler;
 }

@@ -173,7 +173,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                   child: LinearProgressIndicator(
                                     minHeight: 6,
                                     backgroundColor:
-                                        Colors.white.withOpacity(0.12),
+                                        Colors.white.withValues(alpha: 0.12),
                                     valueColor:
                                         const AlwaysStoppedAnimation<Color>(
                                       Color(0xFFFFFFFF),
@@ -268,7 +268,7 @@ class _LogoMark extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                color: Colors.white.withOpacity(0.28 * glow),
+                color: Colors.white.withValues(alpha: 0.28 * glow),
                   blurRadius: 40,
                   spreadRadius: 3,
                 ),
@@ -278,7 +278,7 @@ class _LogoMark extends StatelessWidget {
           Icon(
             Icons.flash_on_rounded,
             size: 42,
-          color: Colors.black.withOpacity(0.88),
+          color: Colors.black.withValues(alpha: 0.88),
           ),
           Positioned(
             bottom: 10,
@@ -288,7 +288,7 @@ class _LogoMark extends StatelessWidget {
               height: 18,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.92),
+                color: Colors.white.withValues(alpha: 0.92),
               ),
             ),
           ),

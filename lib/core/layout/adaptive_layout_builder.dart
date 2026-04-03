@@ -28,10 +28,10 @@ class AdaptiveLayoutBuilder extends StatelessWidget {
           ScreenType.tablet => tablet ?? mobile,
           ScreenType.desktop => desktop ?? tablet ?? mobile,
         };
-        final textScaleFactor = MediaQuery.textScaleFactorOf(context);
+        final textScaler = MediaQuery.textScalerOf(context);
         return ScreenTypeScope(
           screenType: screenType,
-          textScaleFactor: textScaleFactor,
+          textScaler: textScaler,
           child: child,
         );
       },
@@ -53,10 +53,10 @@ class AdaptiveLayoutBuilderX extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenType = Breakpoints.resolve(constraints.maxWidth);
-        final textScaleFactor = MediaQuery.textScaleFactorOf(context);
+        final textScaler = MediaQuery.textScalerOf(context);
         return ScreenTypeScope(
           screenType: screenType,
-          textScaleFactor: textScaleFactor,
+          textScaler: textScaler,
           child: builder(context, screenType),
         );
       },

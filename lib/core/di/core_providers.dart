@@ -4,13 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 import '../../app/app_config.dart';
 import '../logging/app_logger.dart';
 import '../network/dio_client.dart';
-import '../security/pin_hasher.dart';
-import '../services/face_detector_service.dart';
 import '../services/file_picker_service.dart';
 import '../services/location_service.dart';
 import '../services/permission_service.dart';
@@ -48,16 +44,6 @@ final dioClientProvider = Provider<DioClient>((ref) {
     config,
     logger,
     () async => storage.getString(_authTokenKey),
-    () {
-      final envValue = dotenv.env['X_DEVICE_ID']?.trim();
-      if (envValue == null || envValue.isEmpty) return 'DEV_123';
-      return envValue;
-    },
-    () {
-      final envValue = dotenv.env['X_DEVICE_PIN']?.trim();
-      if (envValue == null || envValue.isEmpty) return '123456';
-      return envValue;
-    },
   );
 });
 
@@ -85,14 +71,6 @@ final locationServiceProvider = Provider<LocationService>((ref) {
   return LocationServiceImpl();
 });
 
-final faceDetectorServiceProvider = Provider.autoDispose<FaceDetectorService>(
-      (ref) {
-    final service = FaceDetectorService(logger: ref.read(appLoggerProvider));
-    ref.onDispose(service.close); // ✅ native resources released automatically
-    return service;
-  },
-);
-
 final fileSelectionServiceProvider =
 Provider<FileSelectionService>((ref) {
   return FileSelectionServiceImpl(
@@ -113,8 +91,4 @@ final appStorageProvider = Provider<AppStorage>((ref) {
 final secureStorageServiceProvider = Provider<SecureStorageService>((ref) {
   final secureStorage = ref.watch(flutterSecureStorageProvider);
   return SecureStorageServiceImpl(secureStorage);
-});
-
-final pinHasherProvider = Provider<PinHasher>((ref) {
-  return PinHasher();
 });

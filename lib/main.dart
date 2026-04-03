@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -10,12 +11,23 @@ import 'app/app.dart';
 import 'app/app_config.dart';
 import 'core/di/core_providers.dart';
 import 'core/error/config_exception.dart';
+import 'core/logging/app_logger.dart';
 import 'core/logging/bootstrap_logger.dart';
+import 'core/logging/metrics_provider_observer.dart';
 
 Future<void> main() async {
   runZonedGuarded(
         () async {
           WidgetsFlutterBinding.ensureInitialized();
+
+          PlatformDispatcher.instance.onError = (error, stack) {
+            bootstrapLogger.fatal(
+              'Uncaught async/platform error',
+              error: error,
+              stackTrace: stack,
+            );
+            return true;
+          };
 
           /// 1️⃣ Flutter framework errors (build/layout/render)
           FlutterError.onError = (FlutterErrorDetails details) {
@@ -71,12 +83,14 @@ Future<void> _bootstrap() async {
 
     final appConfig = AppConfigFactory.fromDotEnv();
     final prefs = await SharedPreferences.getInstance();
+    final appLogger = AppLogger(enableLogging: appConfig.enableLogging);
 
     runApp(
       ProviderScope(
+        observers: [MetricsProviderObserver(appLogger)],
         overrides: [
           appConfigProvider.overrideWithValue(appConfig),
-          sharedPreferencesProvider.overrideWith((ref) => prefs),
+          sharedPreferencesProvider.overrideWithValue(AsyncData(prefs)),
         ],
         child: const App(),
       ),

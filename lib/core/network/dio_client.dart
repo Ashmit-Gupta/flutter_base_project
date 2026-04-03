@@ -13,12 +13,10 @@ class DioClient {
   DioClient._(this.dio);
 
   factory DioClient(
-      AppConfig config,
-      AppLogger logger,
-      Future<String?> Function() readToken,
-      String Function() readDeviceId,
-      String Function() readDevicePin,
-      ) {
+    AppConfig config,
+    AppLogger logger,
+    Future<String?> Function() readToken,
+  ) {
     final dio = Dio(
       BaseOptions(
         baseUrl: config.apiBaseUrl,
@@ -37,8 +35,6 @@ class DioClient {
       DioAppInterceptor(
         logger,
         readToken: readToken,
-        readDeviceId: readDeviceId,
-        readDevicePin: readDevicePin,
       ),
     ]);
 

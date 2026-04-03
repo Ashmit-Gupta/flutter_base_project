@@ -41,8 +41,8 @@ class AppTypography {
     required this.fontFamily,
     required this.scale,
     required this.maxFontSize,
-    this.textScaleFactor = 1.0,
-  });
+    TextScaler? textScaler,
+  }) : textScaler = textScaler ?? TextScaler.noScaling;
 
   /// Base text color applied to all text styles.
   final Color color;
@@ -64,10 +64,10 @@ class AppTypography {
   /// producing unreadable or layout-breaking text.
   final double maxFontSize;
 
-  /// Accessibility text scale factor.
+  /// Accessibility text scaler.
   ///
   /// Usually comes from system settings and must always be respected.
-  final double textScaleFactor;
+  final TextScaler textScaler;
 
   /// Computes the final font size after applying:
   /// - Base token size
@@ -75,8 +75,9 @@ class AppTypography {
   /// - Accessibility scaling
   /// - Maximum font size clamp
   double _size(double base) {
-    final scaled = base * scale * textScaleFactor;
-    return math.min(scaled, maxFontSize);
+    final scaledBase = base * scale;
+    final accessibilityScaled = textScaler.scale(scaledBase);
+    return math.min(accessibilityScaled, maxFontSize);
   }
 
   /// Large, high-emphasis text.
@@ -151,7 +152,7 @@ AppTypography typographyForScreen(
     ScreenType screenType,
     Color color,
     String fontFamily, {
-      double textScaleFactor = 1.0,
+      TextScaler? textScaler,
     }) {
   final ts = TypographyScale.fromScreen(screenType);
 
@@ -160,6 +161,6 @@ AppTypography typographyForScreen(
     fontFamily: fontFamily,
     scale: ts.factor,
     maxFontSize: ts.maxFontSize,
-    textScaleFactor: textScaleFactor,
+    textScaler: textScaler,
   );
 }

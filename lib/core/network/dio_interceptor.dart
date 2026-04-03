@@ -7,14 +7,10 @@ import '../logging/app_logger.dart';
 class DioAppInterceptor extends Interceptor {
   final AppLogger logger;
   final Future<String?> Function() readToken;
-  final String Function() readDeviceId;
-  final String Function() readDevicePin;
 
   DioAppInterceptor(
     this.logger, {
     required this.readToken,
-    required this.readDeviceId,
-    required this.readDevicePin,
   });
 
   @override
@@ -26,8 +22,6 @@ class DioAppInterceptor extends Interceptor {
 
     // Attach common headers on every request (including auth).
     final headers = options.headers;
-    headers['x-device-id'] = readDeviceId();
-    headers['x-device-pin'] = readDevicePin();
 
     // Only attach bearer token when we actually have one.
     if (token != null && token.isNotEmpty) {
@@ -39,9 +33,6 @@ class DioAppInterceptor extends Interceptor {
     final redactedHeaders = Map<String, dynamic>.from(headers);
     if (redactedHeaders.containsKey('Authorization')) {
       redactedHeaders['Authorization'] = 'Bearer ***';
-    }
-    if (redactedHeaders.containsKey('x-device-pin')) {
-      redactedHeaders['x-device-pin'] = '***';
     }
 
     logger.debug('➡️ ${options.method} ${options.uri}\n'

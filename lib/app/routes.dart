@@ -1,3 +1,4 @@
+/// Canonical route path constants — keep in sync with [GoRouter] in [app_routes.dart].
 abstract class AppRoutes {
   static const splash = '/';
   static const login = '/login';
@@ -7,8 +8,6 @@ abstract class AppRoutes {
   static const employeeList = '/employee';
   static const registerEmployee = '/employee/register';
   static const employeeImagePreview = '/employee/image-preview';
-  static const faceCapture = '/attendance/face-capture';
-  static const markAttendance = '/attendance/mark-attendance';
   static const designSystemScreen = '/designSystemScreen';
   static const profile = '/profile';
   static const editEmailPassword = '/profile/edit-email-password';

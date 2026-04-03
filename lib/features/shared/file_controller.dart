@@ -5,12 +5,20 @@ import 'dart:io';
 import '../../core/di/core_providers.dart';
 import '../../core/logging/app_logger.dart';
 import '../../core/services/file_picker_service.dart';
-import '../../features/shared/models/app_file_model.dart';
-import '../../features/shared/models/media_result.dart';
+import 'models/app_file_model.dart';
+import 'models/media_result.dart';
 
-final fileControllerProvider = NotifierProvider.autoDispose<FileController, List<AppFileModel>>(FileController.new);
+/// Scoped file pick state: each [scopeId] is an isolated list (e.g. per screen/flow).
+/// Auto-dispose clears state when the route/provider stops being watched.
+final fileControllerProvider = NotifierProvider.autoDispose
+    .family<FileController, List<AppFileModel>, String>(FileController.new);
 
 class FileController extends Notifier<List<AppFileModel>> {
+  FileController(this.scopeId);
+
+  /// Identifies this flow; not stored in [state], but available for logging/tests.
+  final String scopeId;
+
   FileSelectionService get _fileService => ref.read(fileSelectionServiceProvider);
 
   MediaService get _mediaService => ref.read(mediaServiceProvider);
@@ -22,9 +30,18 @@ class FileController extends Notifier<List<AppFileModel>> {
 
   // ================= FILE PICKER =================
 
-  Future<String?> pickFiles({required int maxFiles, FileType type = FileType.any, List<String>? allowedExtensions, bool allowMultiple = true}) async {
+  Future<String?> pickFiles({
+    required int maxFiles,
+    FileType type = FileType.any,
+    List<String>? allowedExtensions,
+    bool allowMultiple = true,
+  }) async {
     try {
-      final files = await _fileService.pickFiles(type: type, allowedExtensions: allowedExtensions, allowMultiple: allowMultiple);
+      final files = await _fileService.pickFiles(
+        type: type,
+        allowedExtensions: allowedExtensions,
+        allowMultiple: allowMultiple,
+      );
 
       if (files.isEmpty) return 'No files selected';
 
@@ -125,7 +142,6 @@ class FileController extends Notifier<List<AppFileModel>> {
     final count = state.length;
 
     if (count < minFiles || count > maxFiles) {
-      // return 'Select between $minFiles and $maxFiles files.';
       return 'Select only $minFiles  files.';
     }
 
@@ -198,7 +214,7 @@ class FileController extends Notifier<List<AppFileModel>> {
       }
     } catch (e, st) {
       _logger.error(
-        '[FileController] pickFromGalleryForProfile failed',
+        '[FileController] pickFromGalleryForProfile failed scope=$scopeId',
         error: e,
         stackTrace: st,
       );
@@ -226,7 +242,7 @@ class FileController extends Notifier<List<AppFileModel>> {
       }
     } catch (e, st) {
       _logger.error(
-        '[FileController] pickFromCameraForProfile failed',
+        '[FileController] pickFromCameraForProfile failed scope=$scopeId',
         error: e,
         stackTrace: st,
       );
@@ -239,16 +255,29 @@ class FileController extends Notifier<List<AppFileModel>> {
     if (!file.existsSync()) {
       return 'Captured photo not found.';
     }
-    final appFile = AppFileModel(name: photoPath.split(Platform.pathSeparator).last, path: photoPath, size: file.lengthSync());
+    final appFile = AppFileModel(
+      name: photoPath.split(Platform.pathSeparator).last,
+      path: photoPath,
+      size: file.lengthSync(),
+    );
     return _mergeWithConstraints(<AppFileModel>[appFile], maxFiles);
   }
 
-  String? addCapturedPhotoPaths({required Map<String, String> photoPathByProfile, required int maxFiles}) {
+  String? addCapturedPhotoPaths({
+    required Map<String, String> photoPathByProfile,
+    required int maxFiles,
+  }) {
     final files = <AppFileModel>[];
     photoPathByProfile.forEach((profileKey, path) {
       final file = File(path);
       if (!file.existsSync()) return;
-      files.add(AppFileModel(name: '${profileKey}_${path.split(Platform.pathSeparator).last}', path: path, size: file.lengthSync()));
+      files.add(
+        AppFileModel(
+          name: '${profileKey}_${path.split(Platform.pathSeparator).last}',
+          path: path,
+          size: file.lengthSync(),
+        ),
+      );
     });
     if (files.isEmpty) return 'Captured photo not found.';
     return _mergeWithConstraints(files, maxFiles);
@@ -272,7 +301,7 @@ class FileController extends Notifier<List<AppFileModel>> {
       ..add(appFile);
     state = next;
     _logger.info(
-      '[FileController] profile-photo-upserted profile=$profileKey path=$photoPath',
+      '[FileController] profile-photo-upserted scope=$scopeId profile=$profileKey path=$photoPath',
     );
     return null;
   }
@@ -284,7 +313,7 @@ class FileController extends Notifier<List<AppFileModel>> {
         .toList(growable: false);
     final after = state.length;
     _logger.info(
-      '[FileController] profile-photo-removed profile=$profileKey removed=${before - after}',
+      '[FileController] profile-photo-removed scope=$scopeId profile=$profileKey removed=${before - after}',
     );
   }
 }
