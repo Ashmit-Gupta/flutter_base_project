@@ -8,6 +8,8 @@ import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup_screen.dart';
 import '../features/face_detection/presentation/screens/face_capture_screen.dart';
 import '../features/face_detection/presentation/model/face_capture_config.dart';
+import '../features/module/employee_module/data/model/get_all_employee_model.dart';
+import '../features/module/employee_module/presentation/screens/employee_list_screen.dart';
 import '../features/module/employee_module/presentation/screens/register_employee_screen.dart';
 import '../features/profile_section/presentation/screens/edit_admin_pin_screen.dart';
 import '../features/profile_section/presentation/screens/edit_email_password_screen.dart';
@@ -15,6 +17,7 @@ import '../features/profile_section/presentation/screens/edit_password_screen.da
 import '../features/profile_section/presentation/screens/profile_screen.dart';
 import '../features/design_system_screen.dart';
 import '../features/shared/screens/image_preview_screen.dart';
+import '../features/module/mark_attendance/presentation/screens/mark_attendance_screen.dart';
 import '../home_screen.dart';
 import '../core/logging/app_logger.dart';
 import '../features/auth/domain/auth_state.dart';
@@ -31,16 +34,15 @@ class AppRouter {
   ) {
     final routeObserver = AppRouteObserver(logger);
     return GoRouter(
-      observers: [
-        routeObserver,
-      ],
+      observers: [routeObserver],
       initialLocation: AppRoutes.splash,
       // initialLocation: AppRoutes.designSystemScreen,
       debugLogDiagnostics: false,
       redirect: (context, state) {
         final authState = readAuthState();
         final location = state.matchedLocation;
-        final isAuthRoute = location == AppRoutes.login ||
+        final isAuthRoute =
+            location == AppRoutes.login ||
             location == AppRoutes.signup ||
             location == AppRoutes.forgotPassword;
 
@@ -52,7 +54,9 @@ class AppRouter {
           AsyncData(:final value) when value is Unauthenticated =>
             (isAuthRoute ? null : AppRoutes.login),
           AsyncData(:final value) when value is Authenticated =>
-            (location == AppRoutes.splash || isAuthRoute ? AppRoutes.home : null),
+            (location == AppRoutes.splash || isAuthRoute
+                ? AppRoutes.home
+                : null),
           _ => null,
         };
       },
@@ -82,8 +86,16 @@ class AppRouter {
           builder: (context, state) => const HomeScreen(),
         ),
         GoRoute(
+          path: AppRoutes.employeeList,
+          builder: (context, state) => const EmployeeListScreen(),
+        ),
+        GoRoute(
           path: AppRoutes.registerEmployee,
-          builder: (context, state) => const RegisterEmployeeScreen(),
+          builder: (context, state) {
+            final extra = state.extra;
+            final employee = extra is GetAllEmployeeUserModel ? extra : null;
+            return RegisterEmployeeScreen(initialEmployee: employee);
+          },
         ),
         GoRoute(
           path: AppRoutes.faceCapture,
@@ -93,6 +105,13 @@ class AppRouter {
                 ? extra
                 : const FaceCaptureConfig.allProfiles();
             return FaceCaptureScreen(config: config);
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.markAttendance,
+          builder: (context, state) {
+            // Location details can be provided via `state.extra` later if needed.
+            return const MarkAttendanceScreen();
           },
         ),
         GoRoute(
@@ -138,11 +157,7 @@ class _ErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text(
-        'Something went wrong',
-        textDirection: TextDirection.ltr,
-      ),
+      child: Text('Something went wrong', textDirection: TextDirection.ltr),
     );
   }
 }
-

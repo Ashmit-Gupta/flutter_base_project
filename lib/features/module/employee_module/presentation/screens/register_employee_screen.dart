@@ -1,4 +1,4 @@
-import 'package:basic_project_setup/core/widgets/field_with_bottom_sheet.dart';
+import 'package:basic_project_setup/core/widgets/app_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
@@ -8,12 +8,13 @@ import '../../../../../core/design/app_spacing.dart';
 import '../../../../../core/feedback/app_snackbar.dart';
 import '../../../../../core/widgets/app_button.dart';
 import '../../../../../core/widgets/file_picker_widget.dart';
-import '../../../../../core/widgets/reusable_list_bottom_sheet.dart';
 import '../../data/model/get_all_employee_model.dart';
 import '../view_models/register_employee_view_model.dart';
 
 class RegisterEmployeeScreen extends HookConsumerWidget {
-  const RegisterEmployeeScreen({super.key});
+  const RegisterEmployeeScreen({super.key, this.initialEmployee});
+
+  final GetAllEmployeeUserModel? initialEmployee;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,11 +22,33 @@ class RegisterEmployeeScreen extends HookConsumerWidget {
     final employeeController = useTextEditingController();
     final viewState = ref.watch(registerEmployeeViewModelProvider);
     final vm = ref.read(registerEmployeeViewModelProvider.notifier);
+    useEffect(() {
+      final employee = initialEmployee;
+      if (employee != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          vm.selectEmployee(employee);
+        });
+      }
+      return null;
+    }, [initialEmployee?.employeeId]);
+
+    useEffect(() {
+      if (viewState.selectedEmployeeName != null) {
+        employeeController.text = viewState.selectedEmployeeName!;
+      }
+      return null;
+    }, [viewState.selectedEmployeeName]);
+
     final colors = context.theme.colors;
 
-    ref.listen<RegisterEmployeeState>(registerEmployeeViewModelProvider, (previous, next) {
+    ref.listen<RegisterEmployeeState>(registerEmployeeViewModelProvider, (
+      previous,
+      next,
+    ) {
       final error = next.errorMessage;
-      if (error != null && error.isNotEmpty && error != previous?.errorMessage) {
+      if (error != null &&
+          error.isNotEmpty &&
+          error != previous?.errorMessage) {
         AppSnackbar.error(context, error);
       }
     });
@@ -34,40 +57,49 @@ class RegisterEmployeeScreen extends HookConsumerWidget {
       final result = await vm.submit(
         isFormValid: formKey.currentState?.validate() == true,
       );
+      if (!context.mounted) return;
       if (result.isError) {
         AppSnackbar.error(context, result.message);
       } else {
         AppSnackbar.success(context, result.message);
+        context.pop();
       }
     }
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => context.pop()),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.pop(),
+        ),
         title: Text('Register Employee', style: context.text.title()),
       ),
       body: SafeArea(
         child: Form(
           key: formKey,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.md,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                FieldWithBottomSheet(
+                AppTextField(
                   controller: employeeController,
+                  enabled: false,
+                  readOnly: true,
+                  fillColor: colors.background,
                   label: 'Select Employee',
                   hint: 'Enter Employee Name',
-                  title: 'Select Employee',
-                  onSelected: (_) {},
-                  bottomSheet: ReusableListBottomSheet<GetAllEmployeeUserModel>(
-                    title: 'Select Employee',
-                    showSearch: true,
-                    searchHint: 'Search employee',
-                    onFetchPage: (page, limit) => vm.fetchEmployeesForBottomSheet(page: page, limit: limit),
-                    labelBuilder: (_, employee) => '${employee.name} (${employee.empCode})',
-                    onTap: (_, value) => vm.selectEmployeeByName(value.name),
-                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Select Employee is required';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 const FilePickerWidget(

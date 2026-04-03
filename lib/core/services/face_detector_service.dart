@@ -10,16 +10,17 @@ class FaceDetectorService {
 
   final AppLogger? _logger;
 
-  // ── MLKit detector instance ───────────────────────────────────
-  // classifyFaces: false  — we don't need smile/eye probability yet
-  // performanceModefast   — prioritise speed over accuracy for live stream
+  // Landmarks + classification + contours: needed to reject covered/occluded
+  // faces (hands/objects). Accurate mode improves euler angles and landmark
+  // stability for guided capture.
   final FaceDetector _detector = FaceDetector(
     options: FaceDetectorOptions(
-      enableClassification: false,
-      enableContours: false,
-      enableLandmarks: false,
-      enableTracking: false,
-      performanceMode: FaceDetectorMode.fast,
+      enableClassification: true,
+      enableContours: true,
+      enableLandmarks: true,
+      enableTracking: true,
+      minFaceSize: 0.12,
+      performanceMode: FaceDetectorMode.accurate,
     ),
   );
 

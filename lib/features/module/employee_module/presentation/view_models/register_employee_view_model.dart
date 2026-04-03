@@ -5,10 +5,11 @@ import '../../data/model/get_all_employee_model.dart';
 import '../../data/model/register_employee_face_detection_images_model.dart';
 import '../../di/employee_di.dart';
 
-final registerEmployeeViewModelProvider = NotifierProvider.autoDispose<
-    RegisterEmployeeViewModel, RegisterEmployeeState>(
-  RegisterEmployeeViewModel.new,
-);
+final registerEmployeeViewModelProvider =
+    NotifierProvider.autoDispose<
+      RegisterEmployeeViewModel,
+      RegisterEmployeeState
+    >(RegisterEmployeeViewModel.new);
 
 class RegisterEmployeeState {
   const RegisterEmployeeState({
@@ -17,6 +18,7 @@ class RegisterEmployeeState {
     this.employees = const <GetAllEmployeeUserModel>[],
     this.selectedEmployeeName,
     this.selectedEmployeeCode,
+    this.selectedEmployeeId,
     this.errorMessage,
   });
 
@@ -25,6 +27,7 @@ class RegisterEmployeeState {
   final List<GetAllEmployeeUserModel> employees;
   final String? selectedEmployeeName;
   final String? selectedEmployeeCode;
+  final int? selectedEmployeeId;
   final String? errorMessage;
 
   RegisterEmployeeState copyWith({
@@ -33,6 +36,7 @@ class RegisterEmployeeState {
     List<GetAllEmployeeUserModel>? employees,
     String? selectedEmployeeName,
     String? selectedEmployeeCode,
+    int? selectedEmployeeId,
     String? errorMessage,
   }) {
     return RegisterEmployeeState(
@@ -41,6 +45,7 @@ class RegisterEmployeeState {
       employees: employees ?? this.employees,
       selectedEmployeeName: selectedEmployeeName ?? this.selectedEmployeeName,
       selectedEmployeeCode: selectedEmployeeCode ?? this.selectedEmployeeCode,
+      selectedEmployeeId: selectedEmployeeId ?? this.selectedEmployeeId,
       errorMessage: errorMessage,
     );
   }
@@ -64,10 +69,7 @@ class RegisterEmployeeViewModel extends Notifier<RegisterEmployeeState> {
 
   Future<void> loadEmployees() async {
     if (state.isLoadingEmployees || state.employees.isNotEmpty) return;
-    state = state.copyWith(
-      isLoadingEmployees: true,
-      errorMessage: null,
-    );
+    state = state.copyWith(isLoadingEmployees: true, errorMessage: null);
 
     final result = await ref.read(employeeRepoProvider).getAllEmployee().run();
     result.match(
@@ -103,26 +105,29 @@ class RegisterEmployeeViewModel extends Notifier<RegisterEmployeeState> {
       },
       (response) {
         final users = response.data;
-        state = state.copyWith(
-          employees: users,
-          errorMessage: null,
-        );
+        state = state.copyWith(employees: users, errorMessage: null);
         return users;
       },
     );
   }
 
   void selectEmployeeByName(String employeeName) {
-    String? employeeCode;
+    GetAllEmployeeUserModel? selected;
     for (final employee in state.employees) {
       if (employee.name == employeeName) {
-        employeeCode = employee.empCode;
+        selected = employee;
         break;
       }
     }
+    if (selected == null) return;
+    selectEmployee(selected);
+  }
+
+  void selectEmployee(GetAllEmployeeUserModel employee) {
     state = state.copyWith(
-      selectedEmployeeName: employeeName,
-      selectedEmployeeCode: employeeCode,
+      selectedEmployeeName: employee.name,
+      selectedEmployeeCode: employee.empCode,
+      selectedEmployeeId: employee.employeeId,
     );
   }
 
@@ -136,18 +141,22 @@ class RegisterEmployeeViewModel extends Notifier<RegisterEmployeeState> {
       );
     }
     if (!isFormValid) {
-      return Future.value(const RegisterEmployeeActionResult(
-        message: 'Please fill required fields.',
-        isError: true,
-      ));
+      return Future.value(
+        const RegisterEmployeeActionResult(
+          message: 'Please fill required fields.',
+          isError: true,
+        ),
+      );
     }
 
     final employeeCode = state.selectedEmployeeCode;
     if (employeeCode == null || employeeCode.isEmpty) {
-      return Future.value(const RegisterEmployeeActionResult(
-        message: 'Please select an employee.',
-        isError: true,
-      ));
+      return Future.value(
+        const RegisterEmployeeActionResult(
+          message: 'Please select an employee.',
+          isError: true,
+        ),
+      );
     }
 
     final fileController = ref.read(fileControllerProvider.notifier);
@@ -155,10 +164,12 @@ class RegisterEmployeeViewModel extends Notifier<RegisterEmployeeState> {
     final front = _firstProfileFile(fileController, 'front_profile');
     final right = _firstProfileFile(fileController, 'right_profile');
     if (left == null || front == null || right == null) {
-      return Future.value(const RegisterEmployeeActionResult(
-        message: 'Please capture all profiles (left, front, right).',
-        isError: true,
-      ));
+      return Future.value(
+        const RegisterEmployeeActionResult(
+          message: 'Please capture all profiles (left, front, right).',
+          isError: true,
+        ),
+      );
     }
 
     final images = RegisterEmployeeFaceDetectionImagesModel(

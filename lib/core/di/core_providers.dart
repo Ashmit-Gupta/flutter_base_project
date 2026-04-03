@@ -12,6 +12,7 @@ import '../network/dio_client.dart';
 import '../security/pin_hasher.dart';
 import '../services/face_detector_service.dart';
 import '../services/file_picker_service.dart';
+import '../services/location_service.dart';
 import '../services/permission_service.dart';
 import '../storage/secure_storage_service.dart';
 import '../storage/shared_pref_storage.dart';
@@ -75,6 +76,14 @@ final mediaServiceProvider = Provider<MediaService>((ref) {
 final mediaPermissionHandlerProvider = Provider<MediaPermissionHandler>(
       (ref) => MediaPermissionHandler(ref.watch(permissionServiceProvider)),
 );
+
+final locationPermissionHandlerProvider = Provider<LocationPermissionHandler>(
+      (ref) => LocationPermissionHandler(ref.watch(permissionServiceProvider)),
+);
+
+final locationServiceProvider = Provider<LocationService>((ref) {
+  return LocationServiceImpl();
+});
 
 final faceDetectorServiceProvider = Provider.autoDispose<FaceDetectorService>(
       (ref) {

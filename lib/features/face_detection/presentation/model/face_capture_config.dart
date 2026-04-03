@@ -2,7 +2,6 @@ import '../controller/face_capture_controller.dart';
 
 class FaceCaptureConfig {
   final List<FaceCaptureStep> steps;
-
   const FaceCaptureConfig._(this.steps);
 
   const FaceCaptureConfig.allProfiles()

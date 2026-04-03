@@ -28,7 +28,7 @@ class RegisterEmployeeFaceDetectionImagesModel {
       'center': _toBase64(frontProfile.path),
       'right': _toBase64(rightProfile.path),
     };
-  }
+  } 
 
   Map<String, dynamic> _fileToJson(AppFileModel file) {
     return <String, dynamic>{

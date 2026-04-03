@@ -1,147 +1,206 @@
 import 'package:flutter/material.dart';
 
-/// Alignment state of the face — drives the overlay color.
-/// Will be populated from eulerY in Step 4.
 enum FaceAlignState { idle, aligned, wrong }
 
-class FaceOverlayPainter extends CustomPainter {
+class FaceFramePainter extends CustomPainter {
   final FaceAlignState alignState;
-  final double progress; // 0.0 → 1.0 for the hold-timer arc (Step 6)
+  final double progress;   // 0.0 → 1.0 hold progress
+  final double scanY;      // 0.0 → 1.0 animated scan line position
+  final Color brandColor;
 
-  const FaceOverlayPainter({
+  const FaceFramePainter({
     required this.alignState,
-    this.progress = 0.0,
+    required this.progress,
+    required this.scanY,
+    required this.brandColor,
   });
 
-  // ── Oval geometry — tweak these to fit your device ───────────
-  static const double _ovalWidthFactor = 0.68;   // 68% of screen width
-  static const double _ovalHeightFactor = 0.42;  // 42% of screen height
-  static const double _ovalYOffset = -0.04;      // slight upward shift
+  // ── Frame geometry ────────────────────────────────────────────
+  static const double _widthFactor   = 0.72;
+  static const double _heightFactor  = 0.50;
+  static const double _yOffset       = -0.03;
+  static const double _cornerR       = 20.0;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final ovalRect = _buildOvalRect(size);
+    final frameRect  = _buildFrameRect(size);
+    final shieldPath = _buildShieldPath(frameRect);
 
-    _drawScrim(canvas, size, ovalRect);
-    _drawOvalBorder(canvas, ovalRect);
-    _drawCornerTicks(canvas, ovalRect);
+    _drawScrim(canvas, size, shieldPath);
+    _drawScanLine(canvas, shieldPath, frameRect);
 
     if (progress > 0.0) {
-      _drawProgressArc(canvas, ovalRect);
+      _drawProgressFill(canvas, shieldPath);
     }
+
+    _drawBorder(canvas, shieldPath);
+    _drawCornerBrackets(canvas, frameRect);
   }
 
-  // ── 1. Dark scrim with oval hole ─────────────────────────────
-  void _drawScrim(Canvas canvas, Size size, Rect ovalRect) {
+  Path _buildShieldPath(Rect rect) {
+    return Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          rect,
+          const Radius.circular(_cornerR),
+        ),
+      );
+  }
+  // ── 2. Dark scrim with shield cutout ──────────────────────────
+  void _drawScrim(Canvas canvas, Size size, Path shieldPath) {
     final scrimPath = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..addOval(ovalRect)
-      ..fillType = PathFillType.evenOdd; // ← punches the hole
+      ..addPath(shieldPath, Offset.zero)
+      ..fillType = PathFillType.evenOdd;
 
     canvas.drawPath(
       scrimPath,
-      Paint()..color = Colors.black.withOpacity(0.55),
+      Paint()..color = Colors.black.withValues(alpha: 0.62),
     );
   }
 
-  // ── 2. Oval border (color reflects alignment) ─────────────────
-  void _drawOvalBorder(Canvas canvas, Rect ovalRect) {
-    canvas.drawOval(
-      ovalRect,
-      Paint()
-        ..color = _borderColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5,
+  // ── 3. Scan line (clipped to shield) ──────────────────────────
+  void _drawScanLine(Canvas canvas, Path shieldPath, Rect frameRect) {
+    if (alignState == FaceAlignState.wrong) return; // hide when wrong
+
+    canvas.save();
+    canvas.clipPath(shieldPath); // line stays inside shield
+
+    // scanY 0.0 = top of frame, 1.0 = bottom of frame
+    final y = frameRect.top + frameRect.height * scanY;
+    // main line gradient
+    final lineRect = Rect.fromLTWH(
+      frameRect.left, y - 1.5, frameRect.width, 3,
     );
-  }
-
-  // ── 3. Corner tick marks ──────────────────────────────────────
-  // Draws 4 L-shaped ticks at top-left, top-right, bottom-left, bottom-right
-  void _drawCornerTicks(Canvas canvas, Rect ovalRect) {
-    const tickLen = 18.0;
-    const tickGap = 10.0; // gap between tick and oval edge
-
-    final paint = Paint()
-      ..color = _borderColor
-      ..strokeWidth = 3.0
-      ..strokeCap = StrokeCap.round;
-
-    final cx = ovalRect.center.dx;
-    final cy = ovalRect.center.dy;
-    final rx = ovalRect.width / 2 + tickGap;
-    final ry = ovalRect.height / 2 + tickGap;
-
-    // top-left
-    _drawTick(canvas, paint,
-        Offset(cx - rx, cy - ry), tickLen, 1, 1);
-    // top-right
-    _drawTick(canvas, paint,
-        Offset(cx + rx, cy - ry), tickLen, -1, 1);
-    // bottom-left
-    _drawTick(canvas, paint,
-        Offset(cx - rx, cy + ry), tickLen, 1, -1);
-    // bottom-right
-    _drawTick(canvas, paint,
-        Offset(cx + rx, cy + ry), tickLen, -1, -1);
-  }
-
-  void _drawTick(
-      Canvas canvas,
-      Paint paint,
-      Offset origin,
-      double len,
-      double xDir, // +1 right, -1 left
-      double yDir, // +1 down,  -1 up
-      ) {
-    // horizontal arm
-    canvas.drawLine(origin, origin.translate(len * xDir, 0), paint);
-    // vertical arm
-    canvas.drawLine(origin, origin.translate(0, len * yDir), paint);
-  }
-
-  // ── 4. Progress arc around oval (Step 6 — just plumbed now) ──
-  void _drawProgressArc(Canvas canvas, Rect ovalRect) {
-    final arcRect = ovalRect.inflate(6);
-    canvas.drawArc(
-      arcRect,
-      -1.5708, // start at top (−π/2)
-      6.2832 * progress, // sweep angle
-      false,
+    canvas.drawRect(
+      lineRect,
       Paint()
-        ..color = Colors.green
+        ..shader = LinearGradient(
+          colors: [
+            Colors.transparent,
+            brandColor.withValues(alpha: 0.5),
+            brandColor.withValues(alpha: 0.9),
+            brandColor.withValues(alpha: 0.5),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
+        ).createShader(lineRect),
+    );
+
+    // soft glow below line
+    final glowRect = Rect.fromLTWH(
+      frameRect.left, y, frameRect.width, 36,
+    );
+    canvas.drawRect(
+      glowRect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [brandColor.withValues(alpha: 0.12), Colors.transparent],
+        ).createShader(glowRect),
+    );
+
+    canvas.restore();
+  }
+
+  // ── 4. Progress fills along the shield border ─────────────────
+  // Uses PathMetrics so the fill literally traces the shield outline
+  void _drawProgressFill(Canvas canvas, Path shieldPath) {
+    final metric = shieldPath.computeMetrics().first;
+    final filledPath = metric.extractPath(0, metric.length * progress);
+
+    canvas.drawPath(
+      filledPath,
+      Paint()
+        ..color = Colors.greenAccent
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 4.0
+        ..strokeWidth = 3.5
         ..strokeCap = StrokeCap.round,
     );
   }
 
-  // ── Helpers ───────────────────────────────────────────────────
-  Rect _buildOvalRect(Size size) {
-    final w = size.width * _ovalWidthFactor;
-    final h = size.height * _ovalHeightFactor;
-    final cx = size.width / 2;
-    final cy = size.height / 2 + size.height * _ovalYOffset;
+  // ── 5. Shield border ──────────────────────────────────────────
+  void _drawBorder(Canvas canvas, Path shieldPath) {
+    // Outer glow when aligned
+    if (alignState == FaceAlignState.aligned) {
+      canvas.drawPath(
+        shieldPath,
+        Paint()
+          ..color = Colors.greenAccent.withValues(alpha: 0.22)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 14
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+      );
+    }
 
-    return Rect.fromCenter(
-      center: Offset(cx, cy),
-      width: w,
-      height: h,
+    canvas.drawPath(
+      shieldPath,
+      Paint()
+        ..color = _borderColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0,
     );
   }
 
-  Color get _borderColor {
-    switch (alignState) {
-      case FaceAlignState.idle:
-        return Colors.white.withOpacity(0.6);
-      case FaceAlignState.aligned:
-        return Colors.greenAccent;
-      case FaceAlignState.wrong:
-        return Colors.redAccent;
-    }
+  // ── 6. Corner brackets (biometric scanner feel) ────────────────
+  // Only draws on the straight top portion of the shield
+  void _drawCornerBrackets(Canvas canvas, Rect rect) {
+    const len   = 20.0;
+    const inset = _cornerR + 2; // aligns with where the shield corner ends
+
+    final paint = Paint()
+      ..color       = _borderColor
+      ..strokeWidth = 3.0
+      ..strokeCap   = StrokeCap.square
+      ..style       = PaintingStyle.stroke;
+
+    // top-left horizontal
+    canvas.drawLine(
+      Offset(rect.left + inset, rect.top),
+      Offset(rect.left + inset + len, rect.top),
+      paint,
+    );
+    // top-left vertical
+    canvas.drawLine(
+      Offset(rect.left, rect.top + inset),
+      Offset(rect.left, rect.top + inset + len),
+      paint,
+    );
+
+    // top-right horizontal
+    canvas.drawLine(
+      Offset(rect.right - inset - len, rect.top),
+      Offset(rect.right - inset, rect.top),
+      paint,
+    );
+    // top-right vertical
+    canvas.drawLine(
+      Offset(rect.right, rect.top + inset),
+      Offset(rect.right, rect.top + inset + len),
+      paint,
+    );
   }
 
-  // Only repaint when state or progress changes
+  // ── Helpers ───────────────────────────────────────────────────
+  Rect _buildFrameRect(Size size) {
+    final w  = size.width  * _widthFactor;
+    final h  = size.height * _heightFactor;
+    final cx = size.width  / 2;
+    final cy = size.height / 2 + size.height * _yOffset;
+    return Rect.fromCenter(center: Offset(cx, cy), width: w, height: h);
+  }
+
+  Color get _borderColor => switch (alignState) {
+    FaceAlignState.idle    => Colors.white.withValues(alpha: 0.65),
+    FaceAlignState.aligned => Colors.greenAccent,
+    FaceAlignState.wrong   => Colors.redAccent,
+  };
+
   @override
-  bool shouldRepaint(FaceOverlayPainter old) =>
-      old.alignState != alignState || old.progress != progress;
+  bool shouldRepaint(FaceFramePainter old) =>
+      old.alignState  != alignState  ||
+          old.progress    != progress    ||
+          old.scanY       != scanY       ||
+          old.brandColor  != brandColor;
 }
